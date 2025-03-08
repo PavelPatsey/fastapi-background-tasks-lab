@@ -9,3 +9,9 @@ class Car(BaseModel):
 
 class CarList(BaseModel):
     cars: list[Car]
+
+
+class CheckCar(BaseModel):
+    car_id: str
+    result: bool
+    message: str

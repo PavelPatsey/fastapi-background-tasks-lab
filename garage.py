@@ -38,7 +38,7 @@ class GarageClient:
         ]
         return CarList(cars=cars)
 
-    def is_exists(self, car_id: str):
+    def check(self, car_id: str):
         time.sleep(self.SLEEP_DURATION)
         if car_id in self.car_db:
             return {car_id: True}
