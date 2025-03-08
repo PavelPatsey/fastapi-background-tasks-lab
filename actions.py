@@ -1,13 +1,22 @@
 import logging
 
+import sqlmodel
+
+import models
 import schemas
 from garage import GarageClient
+from models import Task
 
 logger = logging.getLogger("uvicorn.error")
 
 
 class CarActionsError(Exception):
     pass
+
+
+##################
+# Garage actions #
+##################
 
 
 def _check(car_id: str, garage_client: GarageClient):
@@ -110,3 +119,15 @@ def send_to_parking(car_id: str, garage_client: GarageClient):
         result=True,
         message="ok",
     )
+
+
+################
+# Task actions #
+################
+
+
+def create_task(db_task: Task, session: sqlmodel.Session) -> Task:
+    session.add(db_task)
+    session.commit()
+    session.refresh(db_task)
+    return db_task

@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any, Generator
 
 from fastapi import Depends
 from sqlalchemy.engine import Engine
@@ -26,7 +26,7 @@ def get_sql_engine() -> Engine:
 SQLEngineDepends = Annotated[Engine, Depends(get_sql_engine)]
 
 
-def get_session(engine: SQLEngineDepends):
+def get_session(engine: SQLEngineDepends) -> Generator[Session, Any, None]:
     with Session(engine) as session:
         yield session
 

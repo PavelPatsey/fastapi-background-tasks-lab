@@ -81,10 +81,7 @@ async def send_to_parking(car_id: str, garage_client: dependencies.GarageClientD
 @app.post("/tasks/", response_model=models.TaskPublic)
 def create_task(task: models.TaskCreate, session: dependencies.SQLSessionDepends):
     db_task = Task.model_validate(task)
-    session.add(db_task)
-    session.commit()
-    session.refresh(db_task)
-    return db_task
+    return actions.create_task(db_task, session)
 
 
 @app.get("/tasks/", response_model=list[models.TaskPublic])
