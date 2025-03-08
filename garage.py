@@ -27,7 +27,7 @@ class GarageClient:
             "car_4": {"car_id": "car_4", "status": "ok", "problems": []},
         }
 
-    def get_car_list(self) -> list[Car]:
+    def get_car_list(self) -> CarList:
         cars = [
             Car(
                 car_id=car["car_id"],
