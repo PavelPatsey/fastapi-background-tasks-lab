@@ -22,3 +22,9 @@ class SendForRepairCar(BaseModel):
     result: bool
     problems: list[str]
     message: str
+
+
+class SendToParkingCar(BaseModel):
+    car_id: str
+    result: bool
+    message: str

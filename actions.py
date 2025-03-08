@@ -44,13 +44,11 @@ def _add_problem(car_id: str, problem: str, garage_client: GarageClient):
     logger.info("car add problem response: %s", response)
 
 
-def _fix_problems(car_id: str, problem: str, garage_client: GarageClient):
+def _fix_problems(car_id: str, garage_client: GarageClient):
     try:
-        response = garage_client.fix_problems(car_id, problem)
+        response = garage_client.fix_problems(car_id)
     except Exception as err:
-        msg = (
-            f"Error while trying to fix problems {repr(problem)} of car {repr(car_id)}!"
-        )
+        msg = f"Error while trying to fix problems of car {repr(car_id)}!"
         logger.error("msg: %s\nerr: %s\ntype(err): %s", msg, err, type(err))
         raise CarActionsError(msg)
     logger.info("car fix problems response: %s", response)
@@ -94,5 +92,21 @@ def send_for_repair(car_id: str, problem: str, garage_client: GarageClient):
         car_id=car_id,
         result=True,
         problems=problems,
+        message="ok",
+    )
+
+
+def send_to_parking(car_id: str, garage_client: GarageClient):
+    logger.info("Started send for repair car %s", repr(car_id))
+    _check(car_id, garage_client)
+    _get_problems(car_id, garage_client)
+    _fix_problems(car_id, garage_client)
+    _get_problems(car_id, garage_client)
+    _update_status(car_id, garage_client)
+
+    logger.info("Send car for repair %s completed successfully", repr(car_id))
+    return schemas.SendToParkingCar(
+        car_id=car_id,
+        result=True,
         message="ok",
     )
