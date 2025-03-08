@@ -7,7 +7,7 @@ import actions
 import dependencies
 import schemas
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error")
 
 app = FastAPI()
 
@@ -23,9 +23,27 @@ def get_cars(garage_client: dependencies.GarageClientDepends):
 
 
 @app.post("/cars/{car_id}/actions/check", response_model=schemas.CheckCar)
-def get_cars(car_id: str, garage_client: dependencies.GarageClientDepends):
+async def check_car(car_id: str, garage_client: dependencies.GarageClientDepends):
     try:
         result = actions.check_car(car_id, garage_client)
+    except actions.CarActionsError as err:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)
+        )
+    except Exception as err:
+        logger.error("Unexpected error: %s\ntype(err): %s", err, type(err))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return result
+
+
+@app.post(
+    "/cars/{car_id}/actions/send_for_repair", response_model=schemas.SendForRepairCar
+)
+async def send_for_repair_car(
+    car_id: str, problem: str, garage_client: dependencies.GarageClientDepends
+):
+    try:
+        result = actions.send_for_repair(car_id, problem, garage_client)
     except actions.CarActionsError as err:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)

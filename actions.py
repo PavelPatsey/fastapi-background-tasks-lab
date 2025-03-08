@@ -1,9 +1,9 @@
 import logging
-from garage import GarageClient
+
 import schemas
+from garage import GarageClient
 
-
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error")
 
 
 class CarActionsError(Exception):
@@ -20,8 +20,79 @@ def _check(car_id: str, garage_client: GarageClient):
     logger.info("car check response: %s", response)
 
 
+def _get_problems(car_id: str, garage_client: GarageClient) -> list[str]:
+    try:
+        response = garage_client.get_problems(car_id)
+    except Exception as err:
+        msg = f"Error while trying to get problems of car {repr(car_id)}!"
+        logger.error("msg: %s\nerr: %s\ntype(err): %s", msg, err, type(err))
+        raise CarActionsError(msg)
+    problems = response.get("problems", [])
+    logger.info("car get problems response: %s", response)
+    return problems
+
+
+def _add_problem(car_id: str, problem: str, garage_client: GarageClient):
+    try:
+        response = garage_client.add_problem(car_id, problem)
+    except Exception as err:
+        msg = (
+            f"Error while trying to add problem {repr(problem)} to car {repr(car_id)}!"
+        )
+        logger.error("msg: %s\nerr: %s\ntype(err): %s", msg, err, type(err))
+        raise CarActionsError(msg)
+    logger.info("car add problem response: %s", response)
+
+
+def _fix_problems(car_id: str, problem: str, garage_client: GarageClient):
+    try:
+        response = garage_client.fix_problems(car_id, problem)
+    except Exception as err:
+        msg = (
+            f"Error while trying to fix problems {repr(problem)} of car {repr(car_id)}!"
+        )
+        logger.error("msg: %s\nerr: %s\ntype(err): %s", msg, err, type(err))
+        raise CarActionsError(msg)
+    logger.info("car fix problems response: %s", response)
+
+
+def _update_status(car_id: str, garage_client: GarageClient, max_tries_count: int = 3):
+    counter = 0
+    is_successful = False
+    response = None
+    while counter < max_tries_count and not is_successful:
+        try:
+            response = garage_client.update_status(car_id)
+            is_successful = True
+        except Exception as err:
+            msg = f"Error while trying to updute status of car {repr(car_id)}!"
+            logger.error("msg: %s\nerr: %s\ntype(err): %s", msg, err, type(err))
+            counter += 1
+            logger.info("attempts made: %s", counter)
+            if counter == max_tries_count:
+                raise CarActionsError(msg)
+    logger.info("car update response: %s", response)
+
+
 def check_car(car_id: str, garage_client: GarageClient):
     logger.info("Started check car %s", repr(car_id))
     _check(car_id, garage_client)
     logger.info("Check car %s completed successfully", repr(car_id))
     return schemas.CheckCar(car_id=car_id, result=True, message="ok")
+
+
+def send_for_repair(car_id: str, problem: str, garage_client: GarageClient):
+    logger.info("Started send for repair car %s", repr(car_id))
+    _check(car_id, garage_client)
+    _get_problems(car_id, garage_client)
+    _add_problem(car_id, problem, garage_client)
+    problems = _get_problems(car_id, garage_client)
+    _update_status(car_id, garage_client)
+
+    logger.info("Send car for repair %s completed successfully", repr(car_id))
+    return schemas.SendForRepairCar(
+        car_id=car_id,
+        result=True,
+        problems=problems,
+        message="ok",
+    )

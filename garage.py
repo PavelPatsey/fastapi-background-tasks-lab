@@ -17,17 +17,17 @@ def _random_with_probability(probability: int) -> bool:
 
 class GarageClient:
     UPDATE_STATUS_PROBABILITY = 70
-    SLEEP_DURATION = 3
+    SLEEP_DURATION = 1
 
-    def __init__(self):
-        self.car_db = {
-            "car_1": {"car_id": "car_1", "status": "ok", "problems": []},
-            "car_2": {"car_id": "car_2", "status": "ok", "problems": []},
-            "car_3": {"car_id": "car_3", "status": "ok", "problems": []},
-            "car_4": {"car_id": "car_4", "status": "ok", "problems": []},
-        }
+    car_db = {
+        "car_1": {"car_id": "car_1", "status": "ok", "problems": []},
+        "car_2": {"car_id": "car_2", "status": "ok", "problems": []},
+        "car_3": {"car_id": "car_3", "status": "ok", "problems": []},
+        "car_4": {"car_id": "car_4", "status": "ok", "problems": []},
+    }
 
     def get_car_list(self) -> CarList:
+        time.sleep(self.SLEEP_DURATION)
         cars = [
             Car(
                 car_id=car["car_id"],

@@ -15,3 +15,10 @@ class CheckCar(BaseModel):
     car_id: str
     result: bool
     message: str
+
+
+class SendForRepairCar(BaseModel):
+    car_id: str
+    result: bool
+    problems: list[str]
+    message: str

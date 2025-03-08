@@ -1,6 +1,8 @@
-from garage import GarageClient
-from fastapi import Depends
 from typing import Annotated
+
+from fastapi import Depends
+
+from garage import GarageClient
 
 
 def get_garage_client():
