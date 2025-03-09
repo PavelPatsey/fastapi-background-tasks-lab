@@ -125,7 +125,7 @@ def send_to_parking(car_id: str, garage_client: GarageClient):
 ################
 
 
-def create_task(task: models.TaskCreate, session: sqlmodel.Session) -> Task:
+def create_task(task: models.TaskCreate, session: sqlmodel.Session) -> models.Task:
     db_task = models.Task.model_validate(task)
     session.add(db_task)
     session.commit()

@@ -39,12 +39,12 @@ async def check_car(
 ):
     try:
         task = models.TaskCreate(
-            name=f"check {repr(car_id)}",
+            name=f"check {car_id}",
             car_id=car_id,
             status="in progress",
         )
         db_task = actions.create_task(task, session)
-        task_id = db_task.id
+        msg = f"The task with task id: {db_task.id}, name: {repr(db_task.name)} is running"
         background_tasks.add_task(
             actions.check_car,
             car_id,
@@ -60,7 +60,7 @@ async def check_car(
     return schemas.CheckCar(
         car_id=car_id,
         result=True,
-        message=f"The background task {repr(task_id)} to check the car {repr(car_id)} is running",
+        message=msg,
     )
 
 
