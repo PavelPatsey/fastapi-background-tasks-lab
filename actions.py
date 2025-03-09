@@ -1,6 +1,7 @@
 import logging
 
 import sqlmodel
+from fastapi import BackgroundTasks
 
 import models
 import schemas
@@ -80,11 +81,31 @@ def _update_status(car_id: str, garage_client: GarageClient, max_tries_count: in
     logger.info("car update response: %s", response)
 
 
-def check_car(car_id: str, garage_client: GarageClient):
+def check_car(
+    car_id: str, task_id: int, garage_client: GarageClient, session: sqlmodel.Session
+):
     logger.info("Started check car %s", repr(car_id))
     _check(car_id, garage_client)
+    data = {"status": "completed"}
+    _ = update_task(task_id, data, session)
     logger.info("Check car %s completed successfully", repr(car_id))
-    return schemas.CheckCar(car_id=car_id, result=True, message="ok")
+    return
+
+
+def background_check_car(
+    car_id: str,
+    garage_client: GarageClient,
+    background_tasks: BackgroundTasks,
+    session: sqlmodel.Session,
+):
+    task = models.TaskCreate(
+        name=f"check {car_id}",
+        car_id=car_id,
+        status="in progress",
+    )
+    db_task = create_task(task, session)
+    background_tasks.add_task(check_car, car_id, db_task.id, garage_client, session)
+    return db_task
 
 
 def send_for_repair(car_id: str, problem: str, garage_client: GarageClient):
@@ -131,3 +152,16 @@ def create_task(task: models.TaskCreate, session: sqlmodel.Session) -> models.Ta
     session.commit()
     session.refresh(db_task)
     return db_task
+
+
+def update_task(task_id: int, data: dict, session: sqlmodel.Session) -> models.Task:
+    task_db = session.get(models.Task, task_id)
+    if not task_db:
+        raise ValueError(f"There is no task with id={task_id}")
+    task_data = task_db.model_dump(exclude_unset=True)
+    task_data.update(data)
+    task_db.sqlmodel_update(task_data)
+    session.add(task_db)
+    session.commit()
+    session.refresh(task_db)
+    return task_db

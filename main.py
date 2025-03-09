@@ -38,17 +38,11 @@ async def check_car(
     session: dependencies.SQLSessionDepends,
 ):
     try:
-        task = models.TaskCreate(
-            name=f"check {car_id}",
-            car_id=car_id,
-            status="in progress",
-        )
-        db_task = actions.create_task(task, session)
-        msg = f"The task with task id: {db_task.id}, name: {repr(db_task.name)} is running"
-        background_tasks.add_task(
-            actions.check_car,
+        db_task = actions.background_check_car(
             car_id,
             garage_client,
+            background_tasks,
+            session,
         )
     except actions.CarActionsError as err:
         raise HTTPException(
@@ -59,8 +53,8 @@ async def check_car(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return schemas.CheckCar(
         car_id=car_id,
-        result=True,
-        message=msg,
+        task_id=db_task.id,
+        message="ok",
     )
 
 
@@ -98,11 +92,6 @@ async def send_to_parking(car_id: str, garage_client: dependencies.GarageClientD
     return result
 
 
-@app.post("/tasks/", response_model=models.TaskPublic)
-def create_task(task: models.TaskCreate, session: dependencies.SQLSessionDepends):
-    return actions.create_task(task, session)
-
-
 @app.get("/tasks/", response_model=list[models.TaskPublic])
 def read_tasks(
     session: dependencies.SQLSessionDepends,
@@ -119,31 +108,6 @@ def read_task(task_id: int, session: dependencies.SQLSessionDepends):
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
-
-
-@app.patch("/tasks/{task_id}", response_model=models.Task)
-def update_task(
-    task_id: int, task: models.TaskUpdate, session: dependencies.SQLSessionDepends
-):
-    task_db = session.get(Task, task_id)
-    if not task_db:
-        raise HTTPException(status_code=404, detail="Task not found")
-    task_data = task.model_dump(exclude_unset=True)
-    task_db.sqlmodel_update(task_data)
-    session.add(task_db)
-    session.commit()
-    session.refresh(task_db)
-    return task_db
-
-
-@app.delete("/tasks/{task_id}")
-def delete_task(task_id: int, session: dependencies.SQLSessionDepends):
-    task = session.get(Task, task_id)
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    session.delete(task)
-    session.commit()
-    return {"ok": True}
 
 
 if __name__ == "__main__":

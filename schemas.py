@@ -13,7 +13,7 @@ class CarList(BaseModel):
 
 class CheckCar(BaseModel):
     car_id: str
-    result: bool
+    task_id: int
     message: str
 
 
