@@ -2,8 +2,9 @@ from sqlmodel import Field, SQLModel
 
 
 class TaskBase(SQLModel):
-    name: str
-    status: str
+    name: str = ""
+    car_id: str
+    status: str = ""
     extra_info: str = ""
 
 

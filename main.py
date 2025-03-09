@@ -2,7 +2,7 @@ import logging
 from typing import Annotated
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, Query, status
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, status
 from sqlmodel import SQLModel, create_engine, select
 
 import actions
@@ -31,9 +31,25 @@ def get_cars(garage_client: dependencies.GarageClientDepends):
 
 
 @app.post("/cars/{car_id}/actions/check", response_model=schemas.CheckCar)
-async def check_car(car_id: str, garage_client: dependencies.GarageClientDepends):
+async def check_car(
+    car_id: str,
+    garage_client: dependencies.GarageClientDepends,
+    background_tasks: BackgroundTasks,
+    session: dependencies.SQLSessionDepends,
+):
     try:
-        result = actions.check_car(car_id, garage_client)
+        task = models.TaskCreate(
+            name=f"check {repr(car_id)}",
+            car_id=car_id,
+            status="in progress",
+        )
+        db_task = actions.create_task(task, session)
+        task_id = db_task.id
+        background_tasks.add_task(
+            actions.check_car,
+            car_id,
+            garage_client,
+        )
     except actions.CarActionsError as err:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)
@@ -41,7 +57,11 @@ async def check_car(car_id: str, garage_client: dependencies.GarageClientDepends
     except Exception as err:
         logger.error("Unexpected error: %s\ntype(err): %s", err, type(err))
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    return result
+    return schemas.CheckCar(
+        car_id=car_id,
+        result=True,
+        message=f"The background task {repr(task_id)} to check the car {repr(car_id)} is running",
+    )
 
 
 @app.post(
@@ -80,8 +100,7 @@ async def send_to_parking(car_id: str, garage_client: dependencies.GarageClientD
 
 @app.post("/tasks/", response_model=models.TaskPublic)
 def create_task(task: models.TaskCreate, session: dependencies.SQLSessionDepends):
-    db_task = Task.model_validate(task)
-    return actions.create_task(db_task, session)
+    return actions.create_task(task, session)
 
 
 @app.get("/tasks/", response_model=list[models.TaskPublic])
@@ -91,7 +110,7 @@ def read_tasks(
     limit: Annotated[int, Query(le=100)] = 100,
 ):
     tasks = session.exec(select(Task).offset(offset).limit(limit)).all()
-    return tasks
+    return reversed(tasks)
 
 
 @app.get("/tasks/{task_id}", response_model=models.TaskPublic)
