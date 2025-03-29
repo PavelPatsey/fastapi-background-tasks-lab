@@ -45,12 +45,7 @@ async def check_car(
             session,
         )
     except actions.CarActionsError as err:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)
-        )
-    except Exception as err:
-        logger.error("Unexpected error: %s\ntype(err): %s", err, type(err))
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err))
     return schemas.CheckCar(
         car_id=car_id,
         task_id=db_task.id,
@@ -67,12 +62,7 @@ async def send_for_repair_car(
     try:
         result = actions.send_for_repair(car_id, problem, garage_client)
     except actions.CarActionsError as err:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)
-        )
-    except Exception as err:
-        logger.error("Unexpected error: %s\ntype(err): %s", err, type(err))
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err))
     return result
 
 
@@ -83,12 +73,7 @@ async def send_to_parking(car_id: str, garage_client: dependencies.GarageClientD
     try:
         result = actions.send_to_parking(car_id, garage_client)
     except actions.CarActionsError as err:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)
-        )
-    except Exception as err:
-        logger.error("Unexpected error: %s\ntype(err): %s", err, type(err))
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err))
     return result
 
 
