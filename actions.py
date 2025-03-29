@@ -24,13 +24,13 @@ def get_current_time() -> str:
 ##################
 
 
-def _check(car_id: str, garage_client: GarageClient) -> dict:
+def _check(car_id: str, garage_client: GarageClient) -> dict | bool:
     try:
         response = garage_client.check(car_id)
     except Exception as err:
         msg = f"Error while trying to check car {repr(car_id)}!"
         logger.error("msg: %s\nerr: %s\ntype(err): %s", msg, err, type(err))
-        raise CarActionsError(msg)
+        return False
     logger.info("car check response: %s", response)
     return response
 
@@ -87,6 +87,11 @@ def _update_status(car_id: str, garage_client: GarageClient, max_tries_count: in
     logger.info("car update response: %s", response)
 
 
+###########
+# actions #
+###########
+
+
 def check_car(
     car_id: str,
     task_id: int,
@@ -94,34 +99,23 @@ def check_car(
     session: sqlalchemy.orm.Session,
 ):
     logger.info("Started check car %s", repr(car_id))
-    response = _check(car_id, garage_client)
-    data = {
-        "status": "completed",
-        "extra_info": [
-            str(response),
-            f"{get_current_time()}: finish check {car_id}",
-        ],
-    }
+    extra_info = []
+    status = "completed"
+    steps = [lambda: _check(car_id, garage_client)]
+
+    result = True
+    while steps and result:
+        step_fn = steps.pop()
+        result = step_fn()
+        extra_info.append(result)
+        if not result:
+            status = "failed"
+
+    extra_info.append(f"{get_current_time()}: finish check {car_id}")
+    data = {"status": status, "extra_info": extra_info}
     _ = update_task(task_id, data, session)
     logger.info("Check car %s completed successfully", repr(car_id))
     return
-
-
-def background_check_car(
-    car_id: str,
-    garage_client: GarageClient,
-    background_tasks: BackgroundTasks,
-    session: sqlalchemy.orm.Session,
-):
-    task = schemas.Task(
-        name=f"check {car_id}",
-        car_id=car_id,
-        status="in progress",
-        extra_info=[f"{get_current_time()}: start check {car_id}"],
-    )
-    db_task = create_task(task, session)
-    background_tasks.add_task(check_car, car_id, db_task.id, garage_client, session)
-    return db_task
 
 
 def send_for_repair(car_id: str, problem: str, garage_client: GarageClient):
@@ -155,6 +149,28 @@ def send_to_parking(car_id: str, garage_client: GarageClient):
         result=True,
         message="ok",
     )
+
+
+######################
+# Background actions #
+######################
+
+
+def background_check_car(
+    car_id: str,
+    garage_client: GarageClient,
+    background_tasks: BackgroundTasks,
+    session: sqlalchemy.orm.Session,
+):
+    task = schemas.Task(
+        name=f"check {car_id}",
+        car_id=car_id,
+        status="in progress",
+        extra_info=[f"{get_current_time()}: start check {car_id}"],
+    )
+    db_task = create_task(task, session)
+    background_tasks.add_task(check_car, car_id, db_task.id, garage_client, session)
+    return db_task
 
 
 ################
