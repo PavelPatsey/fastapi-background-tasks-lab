@@ -96,7 +96,7 @@ def read_task(task_id: int, session: dependencies.SQLSessionDepends) -> schemas.
     task = session.get(models.Task, task_id)
     if not task:
         raise HTTPException(status_code=404, detail=f"Task with id={task_id} not found")
-    return task
+    return schemas.Task.model_validate(task)
 
 
 if __name__ == "__main__":
