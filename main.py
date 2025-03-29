@@ -22,7 +22,10 @@ models.Base.metadata.create_all(engine)
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {
+        "message": "Hello World",
+        "current_time": actions.get_current_time(),
+    }
 
 
 @app.get("/cars", response_model=schemas.CarList)

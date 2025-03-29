@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 import sqlalchemy
 from fastapi import BackgroundTasks
@@ -12,6 +13,10 @@ logger = logging.getLogger("uvicorn.error")
 
 class CarActionsError(Exception):
     pass
+
+
+def get_current_time() -> str:
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 ##################
