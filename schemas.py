@@ -37,7 +37,7 @@ class Task(BaseModel):
     name: str
     car_id: str
     status: str
-    extra_info: list[str] = []
+    extra_info: list = []
 
 
 class TaskList(BaseModel):

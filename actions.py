@@ -24,7 +24,7 @@ def get_current_time() -> str:
 ##################
 
 
-def _check(car_id: str, garage_client: GarageClient):
+def _check(car_id: str, garage_client: GarageClient) -> dict:
     try:
         response = garage_client.check(car_id)
     except Exception as err:
@@ -32,6 +32,7 @@ def _check(car_id: str, garage_client: GarageClient):
         logger.error("msg: %s\nerr: %s\ntype(err): %s", msg, err, type(err))
         raise CarActionsError(msg)
     logger.info("car check response: %s", response)
+    return response
 
 
 def _get_problems(car_id: str, garage_client: GarageClient) -> list[str]:
@@ -93,8 +94,14 @@ def check_car(
     session: sqlalchemy.orm.Session,
 ):
     logger.info("Started check car %s", repr(car_id))
-    _check(car_id, garage_client)
-    data = {"status": "completed"}
+    response = _check(car_id, garage_client)
+    data = {
+        "status": "completed",
+        "extra_info": [
+            str(response),
+            f"{get_current_time()}: finish check {car_id}",
+        ],
+    }
     _ = update_task(task_id, data, session)
     logger.info("Check car %s completed successfully", repr(car_id))
     return
@@ -110,6 +117,7 @@ def background_check_car(
         name=f"check {car_id}",
         car_id=car_id,
         status="in progress",
+        extra_info=[f"{get_current_time()}: start check {car_id}"],
     )
     db_task = create_task(task, session)
     background_tasks.add_task(check_car, car_id, db_task.id, garage_client, session)
@@ -155,10 +163,10 @@ def send_to_parking(car_id: str, garage_client: GarageClient):
 
 
 def create_task(
-    task: schemas.Task,
+    model_task: schemas.Task,
     session: sqlalchemy.orm.Session,
 ) -> models.Task:
-    task_data = task.model_dump()
+    task_data = model_task.model_dump()
     db_task = models.Task(**task_data)
     session.add(db_task)
     session.commit()
@@ -173,11 +181,11 @@ def update_task(
 ) -> models.Task:
     task_db: models.Task = session.get(models.Task, task_id)
     if not task_db:
-        raise ValueError(f"There is no task with id={task_id}")
+        raise CarActionsError(f"There is no task with id={task_id}")
     for field, value in data.items():
         if field == "extra_info":
-            extra_info: list = task_db.extra_info
-            extra_info.append(value)
+            extra_info: list = list(task_db.extra_info)
+            extra_info.extend(value)
             setattr(task_db, field, extra_info)
         else:
             setattr(task_db, field, value)
