@@ -1,6 +1,6 @@
 import logging
 
-import sqlmodel
+import sqlalchemy
 from fastapi import BackgroundTasks
 
 import models
@@ -82,7 +82,10 @@ def _update_status(car_id: str, garage_client: GarageClient, max_tries_count: in
 
 
 def check_car(
-    car_id: str, task_id: int, garage_client: GarageClient, session: sqlmodel.Session
+    car_id: str,
+    task_id: int,
+    garage_client: GarageClient,
+    session: sqlalchemy.orm.Session,
 ):
     logger.info("Started check car %s", repr(car_id))
     _check(car_id, garage_client)
@@ -96,9 +99,9 @@ def background_check_car(
     car_id: str,
     garage_client: GarageClient,
     background_tasks: BackgroundTasks,
-    session: sqlmodel.Session,
+    session: sqlalchemy.orm.Session,
 ):
-    task = models.TaskCreate(
+    task = schemas.Task(
         name=f"check {car_id}",
         car_id=car_id,
         status="in progress",
@@ -146,22 +149,33 @@ def send_to_parking(car_id: str, garage_client: GarageClient):
 ################
 
 
-def create_task(task: models.TaskCreate, session: sqlmodel.Session) -> models.Task:
-    db_task = models.Task.model_validate(task)
+def create_task(
+    task: schemas.Task,
+    session: sqlalchemy.orm.Session,
+) -> models.Task:
+    task_data = task.model_dump()
+    db_task = models.Task(**task_data)
     session.add(db_task)
     session.commit()
     session.refresh(db_task)
     return db_task
 
 
-def update_task(task_id: int, data: dict, session: sqlmodel.Session) -> models.Task:
-    task_db = session.get(models.Task, task_id)
+def update_task(
+    task_id: int,
+    data: dict,
+    session: sqlalchemy.orm.Session,
+) -> models.Task:
+    task_db: models.Task = session.get(models.Task, task_id)
     if not task_db:
         raise ValueError(f"There is no task with id={task_id}")
-    task_data = task_db.model_dump(exclude_unset=True)
-    task_data.update(data)
-    task_db.sqlmodel_update(task_data)
-    session.add(task_db)
+    for field, value in data.items():
+        if field == "extra_info":
+            extra_info: list = task_db.extra_info
+            extra_info.append(value)
+            setattr(task_db, field, extra_info)
+        else:
+            setattr(task_db, field, value)
     session.commit()
     session.refresh(task_db)
     return task_db

@@ -3,21 +3,21 @@ from typing import Annotated
 
 import uvicorn
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, status
-from sqlmodel import SQLModel, create_engine, select
+from sqlalchemy import create_engine
 
 import actions
 import dependencies
 import models
 import schemas
 import settings
-from models import Task
 
 logger = logging.getLogger("uvicorn.error")
 
 app = FastAPI()
 
+
 engine = create_engine(settings.SQLITE_URL, connect_args=settings.CONNECT_ARGS)
-SQLModel.metadata.create_all(engine)
+models.Base.metadata.create_all(engine)
 
 
 @app.get("/")
@@ -77,19 +77,20 @@ async def send_to_parking(car_id: str, garage_client: dependencies.GarageClientD
     return result
 
 
-@app.get("/tasks/", response_model=list[models.TaskPublic])
+@app.get("/tasks/", response_model=schemas.TaskList)
 def read_tasks(
     session: dependencies.SQLSessionDepends,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
-):
-    tasks = session.exec(select(Task).offset(offset).limit(limit)).all()
-    return reversed(tasks)
+) -> schemas.TaskList:
+    db_tasks = session.query(models.Task).offset(offset).limit(limit).all()
+    tasks = [schemas.Task.model_validate(task) for task in reversed(db_tasks)]
+    return schemas.TaskList(tasks=tasks)
 
 
-@app.get("/tasks/{task_id}", response_model=models.TaskPublic)
-def read_task(task_id: int, session: dependencies.SQLSessionDepends):
-    task = session.get(Task, task_id)
+@app.get("/tasks/{task_id}", response_model=schemas.Task)
+def read_task(task_id: int, session: dependencies.SQLSessionDepends) -> schemas.Task:
+    task = session.get(models.Task, task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task

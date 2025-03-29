@@ -1,8 +1,9 @@
 from typing import Annotated, Any, Generator
 
 from fastapi import Depends
+from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
-from sqlmodel import Session, create_engine
+from sqlalchemy.orm import Session
 
 import settings
 from garage import GarageClient

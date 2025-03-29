@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Car(BaseModel):
@@ -28,3 +28,17 @@ class SendToParkingCar(BaseModel):
     car_id: str
     result: bool
     message: str
+
+
+class Task(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int | None = None
+    name: str
+    car_id: str
+    status: str
+    extra_info: list[str] = []
+
+
+class TaskList(BaseModel):
+    tasks: list[Task]

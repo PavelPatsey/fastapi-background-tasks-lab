@@ -1,24 +1,13 @@
-from sqlmodel import Field, SQLModel
+from sqlalchemy import JSON, Column, Integer, String
+from sqlalchemy.orm import declarative_base
+
+Base = declarative_base()
 
 
-class TaskBase(SQLModel):
-    name: str = ""
-    car_id: str
-    status: str = ""
-    extra_info: str = ""
-
-
-class Task(TaskBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-
-
-class TaskPublic(TaskBase):
-    id: int
-
-
-class TaskCreate(TaskBase):
-    pass
-
-
-class TaskUpdate(TaskBase):
-    pass
+class Task(Base):
+    __tablename__ = "tasks"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    car_id = Column(String)
+    status = Column(String)
+    extra_info = Column(JSON, default=[])
