@@ -98,7 +98,6 @@ def check_car(
     garage_client: GarageClient,
     session: sqlalchemy.orm.Session,
 ):
-    logger.info("Started check car %s", repr(car_id))
     extra_info = []
     status = "completed"
     steps = [lambda: _check(car_id, garage_client)]
@@ -114,7 +113,6 @@ def check_car(
     extra_info.append(f"{get_current_time()}: finish check {car_id}")
     data = {"status": status, "extra_info": extra_info}
     _ = update_task(task_id, data, session)
-    logger.info("Check car %s completed successfully", repr(car_id))
     return
 
 
