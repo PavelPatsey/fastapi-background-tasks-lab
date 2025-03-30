@@ -160,17 +160,7 @@ def background_check_car(
     session: sqlalchemy.orm.Session,
 ):
     name = f"check {repr(car_id)}"
-    task = schemas.Task(
-        name=name,
-        car_id=car_id,
-        status="in progress",
-        messages=[
-            {
-                "timestamp": get_current_time(),
-                "msg": f"start {name}",
-            }
-        ],
-    )
+    task = create_task_model(name, car_id)
     db_task = create_task(task, session)
 
     steps = [lambda: _check(car_id, garage_client)]
@@ -186,17 +176,7 @@ def background_send_for_repair(
     session: sqlalchemy.orm.Session,
 ):
     name = f"send for repair {repr(car_id)} with problem {repr(problem)}"
-    task = schemas.Task(
-        name=name,
-        car_id=car_id,
-        status="in progress",
-        messages=[
-            {
-                "timestamp": get_current_time(),
-                "msg": f"start {name}",
-            }
-        ],
-    )
+    task = create_task_model(name, car_id)
     db_task = create_task(task, session)
     steps = [
         lambda: _check(car_id, garage_client),
@@ -216,17 +196,7 @@ def background_send_to_parking(
     session: sqlalchemy.orm.Session,
 ):
     name = f"send to parking car {repr(car_id)}"
-    task = schemas.Task(
-        name=name,
-        car_id=car_id,
-        status="in progress",
-        messages=[
-            {
-                "timestamp": get_current_time(),
-                "msg": f"start {name}",
-            }
-        ],
-    )
+    task = create_task_model(name, car_id)
     db_task = create_task(task, session)
     steps = [
         lambda: _check(car_id, garage_client),
@@ -242,6 +212,20 @@ def background_send_to_parking(
 ################
 # Task actions #
 ################
+
+
+def create_task_model(name: str, car_id: str):
+    return schemas.Task(
+        name=name,
+        car_id=car_id,
+        status="in progress",
+        messages=[
+            {
+                "timestamp": get_current_time(),
+                "msg": f"start {name}",
+            }
+        ],
+    )
 
 
 def create_task(
