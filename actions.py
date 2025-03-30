@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from typing import Callable
 
 import sqlalchemy
 from fastapi import BackgroundTasks
@@ -115,21 +116,19 @@ def _update_status(car_id: str, garage_client: GarageClient, max_tries_count: in
     return result
 
 
-###########
-# actions #
-###########
+#############
+# run_steps #
+#############
 
 
-def check_car(
-    car_id: str,
+def run_steps(
+    name: str,
+    steps: list[Callable],
     task_id: int,
-    garage_client: GarageClient,
     session: sqlalchemy.orm.Session,
 ):
     messages = []
     status = "completed"
-    steps = [lambda: _check(car_id, garage_client)]
-
     is_successful = True
     while steps and is_successful:
         step_func = steps.pop()
@@ -141,78 +140,7 @@ def check_car(
     messages.append(
         {
             "timestamp": get_current_time(),
-            "msg": f"finish check {repr(car_id)}",
-        }
-    )
-    data = {"status": status, "messages": messages}
-    _ = update_task(task_id, data, session)
-    return
-
-
-def send_for_repair(
-    car_id: str,
-    problem: str,
-    task_id: int,
-    garage_client: GarageClient,
-    session: sqlalchemy.orm.Session,
-):
-    messages = []
-    status = "completed"
-    steps = [
-        lambda: _check(car_id, garage_client),
-        lambda: _get_problems(car_id, garage_client),
-        lambda: _add_problem(car_id, problem, garage_client),
-        lambda: _get_problems(car_id, garage_client),
-        lambda: _update_status(car_id, garage_client),
-    ][::-1]
-
-    is_successful = True
-    while steps and is_successful:
-        step_func = steps.pop()
-        return_value = step_func()
-        messages.append(return_value)
-        if not (is_successful := return_value.get("success")):
-            status = "failed"
-
-    messages.append(
-        {
-            "timestamp": get_current_time(),
-            "msg": f"send for repair {repr(car_id)} with problem {repr(problem)}",
-        }
-    )
-    data = {"status": status, "messages": messages}
-    _ = update_task(task_id, data, session)
-    return
-
-
-def send_to_parking(
-    car_id: str,
-    task_id: int,
-    garage_client: GarageClient,
-    session: sqlalchemy.orm.Session,
-):
-    messages = []
-    status = "completed"
-    steps = [
-        lambda: _check(car_id, garage_client),
-        lambda: _get_problems(car_id, garage_client),
-        lambda: _fix_problems(car_id, garage_client),
-        lambda: _get_problems(car_id, garage_client),
-        lambda: _update_status(car_id, garage_client),
-    ][::-1]
-
-    is_successful = True
-    while steps and is_successful:
-        step_func = steps.pop()
-        return_value = step_func()
-        messages.append(return_value)
-        if not (is_successful := return_value.get("success")):
-            status = "failed"
-
-    messages.append(
-        {
-            "timestamp": get_current_time(),
-            "msg": f"finish send to parking car {repr(car_id)}",
+            "msg": f"finish {name}",
         }
     )
     data = {"status": status, "messages": messages}
@@ -231,19 +159,22 @@ def background_check_car(
     background_tasks: BackgroundTasks,
     session: sqlalchemy.orm.Session,
 ):
+    name = f"check {repr(car_id)}"
     task = schemas.Task(
-        name=f"check {repr(car_id)}",
+        name=name,
         car_id=car_id,
         status="in progress",
         messages=[
             {
                 "timestamp": get_current_time(),
-                "msg": f"start check {repr(car_id)}",
+                "msg": f"start {name}",
             }
         ],
     )
     db_task = create_task(task, session)
-    background_tasks.add_task(check_car, car_id, db_task.id, garage_client, session)
+
+    steps = [lambda: _check(car_id, garage_client)]
+    background_tasks.add_task(run_steps, name, steps, db_task.id, session)
     return db_task
 
 
@@ -254,21 +185,27 @@ def background_send_for_repair(
     background_tasks: BackgroundTasks,
     session: sqlalchemy.orm.Session,
 ):
+    name = f"send for repair {repr(car_id)} with problem {repr(problem)}"
     task = schemas.Task(
-        name=f"send for repair {repr(car_id)} with problem {repr(problem)}",
+        name=name,
         car_id=car_id,
         status="in progress",
         messages=[
             {
                 "timestamp": get_current_time(),
-                "msg": f"start send for repair {repr(car_id)} with problem {repr(problem)}",
+                "msg": f"start {name}",
             }
         ],
     )
     db_task = create_task(task, session)
-    background_tasks.add_task(
-        send_for_repair, car_id, problem, db_task.id, garage_client, session
-    )
+    steps = [
+        lambda: _check(car_id, garage_client),
+        lambda: _get_problems(car_id, garage_client),
+        lambda: _add_problem(car_id, problem, garage_client),
+        lambda: _get_problems(car_id, garage_client),
+        lambda: _update_status(car_id, garage_client),
+    ][::-1]
+    background_tasks.add_task(run_steps, name, steps, db_task.id, session)
     return db_task
 
 
@@ -278,21 +215,27 @@ def background_send_to_parking(
     background_tasks: BackgroundTasks,
     session: sqlalchemy.orm.Session,
 ):
+    name = f"send to parking car {repr(car_id)}"
     task = schemas.Task(
-        name=f"send to parking car {repr(car_id)}",
+        name=name,
         car_id=car_id,
         status="in progress",
         messages=[
             {
                 "timestamp": get_current_time(),
-                "msg": f"start send to parking car {repr(car_id)}",
+                "msg": f"start {name}",
             }
         ],
     )
     db_task = create_task(task, session)
-    background_tasks.add_task(
-        send_to_parking, car_id, db_task.id, garage_client, session
-    )
+    steps = [
+        lambda: _check(car_id, garage_client),
+        lambda: _get_problems(car_id, garage_client),
+        lambda: _fix_problems(car_id, garage_client),
+        lambda: _get_problems(car_id, garage_client),
+        lambda: _update_status(car_id, garage_client),
+    ][::-1]
+    background_tasks.add_task(run_steps, name, steps, db_task.id, session)
     return db_task
 
 
