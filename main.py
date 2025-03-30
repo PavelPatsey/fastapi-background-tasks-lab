@@ -86,12 +86,26 @@ async def send_for_repair_car(
 @app.post(
     "/cars/{car_id}/actions/send_to_parking", response_model=schemas.SendToParkingCar
 )
-async def send_to_parking(car_id: str, garage_client: dependencies.GarageClientDepends):
+async def send_to_parking(
+    car_id: str,
+    garage_client: dependencies.GarageClientDepends,
+    background_tasks: BackgroundTasks,
+    session: dependencies.SQLSessionDepends,
+):
     try:
-        result = actions.send_to_parking(car_id, garage_client)
+        db_task = actions.background_send_to_parking(
+            car_id,
+            garage_client,
+            background_tasks,
+            session,
+        )
     except actions.CarActionsError as err:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err))
-    return result
+    return schemas.CheckCar(
+        car_id=car_id,
+        task_id=db_task.id,
+        message="ok",
+    )
 
 
 @app.get("/tasks/", response_model=schemas.TaskList)

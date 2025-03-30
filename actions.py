@@ -185,20 +185,39 @@ def send_for_repair(
     return
 
 
-def send_to_parking(car_id: str, garage_client: GarageClient):
-    logger.info("Started send for repair car %s", repr(car_id))
-    _check(car_id, garage_client)
-    _get_problems(car_id, garage_client)
-    _fix_problems(car_id, garage_client)
-    _get_problems(car_id, garage_client)
-    _update_status(car_id, garage_client)
+def send_to_parking(
+    car_id: str,
+    task_id: int,
+    garage_client: GarageClient,
+    session: sqlalchemy.orm.Session,
+):
+    messages = []
+    status = "completed"
+    steps = [
+        lambda: _check(car_id, garage_client),
+        lambda: _get_problems(car_id, garage_client),
+        lambda: _fix_problems(car_id, garage_client),
+        lambda: _get_problems(car_id, garage_client),
+        lambda: _update_status(car_id, garage_client),
+    ][::-1]
 
-    logger.info("Send car for repair %s completed successfully", repr(car_id))
-    return schemas.SendToParkingCar(
-        car_id=car_id,
-        result=True,
-        message="ok",
+    is_successful = True
+    while steps and is_successful:
+        step_func = steps.pop()
+        return_value = step_func()
+        messages.append(return_value)
+        if not (is_successful := return_value.get("success")):
+            status = "failed"
+
+    messages.append(
+        {
+            "timestamp": get_current_time(),
+            "msg": f"finish send to parking car {repr(car_id)}",
+        }
     )
+    data = {"status": status, "messages": messages}
+    _ = update_task(task_id, data, session)
+    return
 
 
 ######################
@@ -253,16 +272,40 @@ def background_send_for_repair(
     return db_task
 
 
+def background_send_to_parking(
+    car_id: str,
+    garage_client: GarageClient,
+    background_tasks: BackgroundTasks,
+    session: sqlalchemy.orm.Session,
+):
+    task = schemas.Task(
+        name=f"send to parking car {repr(car_id)}",
+        car_id=car_id,
+        status="in progress",
+        messages=[
+            {
+                "timestamp": get_current_time(),
+                "msg": f"start send to parking car {repr(car_id)}",
+            }
+        ],
+    )
+    db_task = create_task(task, session)
+    background_tasks.add_task(
+        send_to_parking, car_id, db_task.id, garage_client, session
+    )
+    return db_task
+
+
 ################
 # Task actions #
 ################
 
 
 def create_task(
-    model_task: schemas.Task,
+    task: schemas.Task,
     session: sqlalchemy.orm.Session,
 ) -> models.Task:
-    task_data = model_task.model_dump()
+    task_data = task.model_dump()
     db_task = models.Task(**task_data)
     session.add(db_task)
     session.commit()

@@ -25,7 +25,7 @@ class SendForRepairCar(BaseModel):
 
 class SendToParkingCar(BaseModel):
     car_id: str
-    result: bool
+    task_id: int
     message: str
 
 
