@@ -19,8 +19,7 @@ class CheckCar(BaseModel):
 
 class SendForRepairCar(BaseModel):
     car_id: str
-    result: bool
-    problems: list[str]
+    task_id: int
     message: str
 
 

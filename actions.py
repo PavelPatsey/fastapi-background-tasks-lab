@@ -24,7 +24,7 @@ def get_current_time() -> str:
 ##################
 
 
-def _check(car_id: str, garage_client: GarageClient) -> dict | bool:
+def _check(car_id: str, garage_client: GarageClient) -> dict:
     result = {}
     try:
         response = garage_client.check(car_id)
@@ -39,56 +39,80 @@ def _check(car_id: str, garage_client: GarageClient) -> dict | bool:
     return result
 
 
-def _get_problems(car_id: str, garage_client: GarageClient) -> list[str]:
+def _get_problems(car_id: str, garage_client: GarageClient) -> dict:
+    result = {}
     try:
         response = garage_client.get_problems(car_id)
+        result["response"] = response
+        result["success"] = True
     except Exception as err:
         msg = f"Error while trying to get problems of car {repr(car_id)}!"
         logger.error("msg: %s\nerr: %s\ntype(err): %s", msg, err, type(err))
-        raise CarActionsError(msg)
-    problems = response.get("problems", [])
-    logger.info("car get problems response: %s", response)
-    return problems
+        result["error"] = msg
+        result["success"] = False
+    result["timestamp"] = get_current_time()
+    return result
 
 
-def _add_problem(car_id: str, problem: str, garage_client: GarageClient):
+def _add_problem(car_id: str, problem: str, garage_client: GarageClient) -> dict:
+    result = {}
     try:
         response = garage_client.add_problem(car_id, problem)
+        result["response"] = response
+        result["success"] = True
     except Exception as err:
         msg = (
             f"Error while trying to add problem {repr(problem)} to car {repr(car_id)}!"
         )
         logger.error("msg: %s\nerr: %s\ntype(err): %s", msg, err, type(err))
-        raise CarActionsError(msg)
-    logger.info("car add problem response: %s", response)
+        result["error"] = msg
+        result["success"] = False
+    result["timestamp"] = get_current_time()
+    return result
 
 
-def _fix_problems(car_id: str, garage_client: GarageClient):
+def _fix_problems(car_id: str, garage_client: GarageClient) -> dict:
+    result = {}
     try:
         response = garage_client.fix_problems(car_id)
+        result["response"] = response
+        result["success"] = True
     except Exception as err:
         msg = f"Error while trying to fix problems of car {repr(car_id)}!"
         logger.error("msg: %s\nerr: %s\ntype(err): %s", msg, err, type(err))
-        raise CarActionsError(msg)
-    logger.info("car fix problems response: %s", response)
+        result["error"] = msg
+        result["success"] = False
+    result["timestamp"] = get_current_time()
+    return result
 
 
 def _update_status(car_id: str, garage_client: GarageClient, max_tries_count: int = 3):
+    result = {"attempts": []}
     counter = 0
     is_successful = False
-    response = None
     while counter < max_tries_count and not is_successful:
+        counter += 1
         try:
             response = garage_client.update_status(car_id)
+            result["response"] = response
+            result["success"] = True
             is_successful = True
         except Exception as err:
-            msg = f"Error while trying to updute status of car {repr(car_id)}!"
+            msg = f"Error while trying to update status of car {repr(car_id)}!"
             logger.error("msg: %s\nerr: %s\ntype(err): %s", msg, err, type(err))
-            counter += 1
             logger.info("attempts made: %s", counter)
+            result["attempts"].append(
+                {
+                    "timestamp": get_current_time(),
+                    "error": msg,
+                    "attempt number": counter,
+                }
+            )
             if counter == max_tries_count:
-                raise CarActionsError(msg)
-    logger.info("car update response: %s", response)
+                result["error"] = msg
+                result["success"] = False
+    result["timestamp"] = get_current_time()
+    return result
 
 
 ###########
@@ -125,21 +149,40 @@ def check_car(
     return
 
 
-def send_for_repair(car_id: str, problem: str, garage_client: GarageClient):
-    logger.info("Started send for repair car %s", repr(car_id))
-    _check(car_id, garage_client)
-    _get_problems(car_id, garage_client)
-    _add_problem(car_id, problem, garage_client)
-    problems = _get_problems(car_id, garage_client)
-    _update_status(car_id, garage_client)
+def send_for_repair(
+    car_id: str,
+    problem: str,
+    task_id: int,
+    garage_client: GarageClient,
+    session: sqlalchemy.orm.Session,
+):
+    messages = []
+    status = "completed"
+    steps = [
+        lambda: _check(car_id, garage_client),
+        lambda: _get_problems(car_id, garage_client),
+        lambda: _add_problem(car_id, problem, garage_client),
+        lambda: _get_problems(car_id, garage_client),
+        lambda: _update_status(car_id, garage_client),
+    ][::-1]
 
-    logger.info("Send car for repair %s completed successfully", repr(car_id))
-    return schemas.SendForRepairCar(
-        car_id=car_id,
-        result=True,
-        problems=problems,
-        message="ok",
+    is_successful = True
+    while steps and is_successful:
+        step_func = steps.pop()
+        return_value = step_func()
+        messages.append(return_value)
+        if not (is_successful := return_value.get("success")):
+            status = "failed"
+
+    messages.append(
+        {
+            "timestamp": get_current_time(),
+            "msg": f"send for repair {repr(car_id)} with problem {repr(problem)}",
+        }
     )
+    data = {"status": status, "messages": messages}
+    _ = update_task(task_id, data, session)
+    return
 
 
 def send_to_parking(car_id: str, garage_client: GarageClient):
@@ -182,6 +225,31 @@ def background_check_car(
     )
     db_task = create_task(task, session)
     background_tasks.add_task(check_car, car_id, db_task.id, garage_client, session)
+    return db_task
+
+
+def background_send_for_repair(
+    car_id: str,
+    problem: str,
+    garage_client: GarageClient,
+    background_tasks: BackgroundTasks,
+    session: sqlalchemy.orm.Session,
+):
+    task = schemas.Task(
+        name=f"send for repair {repr(car_id)} with problem {repr(problem)}",
+        car_id=car_id,
+        status="in progress",
+        messages=[
+            {
+                "timestamp": get_current_time(),
+                "msg": f"start send for repair {repr(car_id)} with problem {repr(problem)}",
+            }
+        ],
+    )
+    db_task = create_task(task, session)
+    background_tasks.add_task(
+        send_for_repair, car_id, problem, db_task.id, garage_client, session
+    )
     return db_task
 
 
