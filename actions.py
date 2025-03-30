@@ -25,14 +25,18 @@ def get_current_time() -> str:
 
 
 def _check(car_id: str, garage_client: GarageClient) -> dict | bool:
+    result = {}
     try:
         response = garage_client.check(car_id)
+        result["response"] = response
+        result["success"] = True
     except Exception as err:
         msg = f"Error while trying to check car {repr(car_id)}!"
         logger.error("msg: %s\nerr: %s\ntype(err): %s", msg, err, type(err))
-        return False
-    logger.info("car check response: %s", response)
-    return response
+        result["error"] = msg
+        result["success"] = False
+    result["timestamp"] = get_current_time()
+    return result
 
 
 def _get_problems(car_id: str, garage_client: GarageClient) -> list[str]:
@@ -98,20 +102,25 @@ def check_car(
     garage_client: GarageClient,
     session: sqlalchemy.orm.Session,
 ):
-    extra_info = []
+    messages = []
     status = "completed"
     steps = [lambda: _check(car_id, garage_client)]
 
-    result = True
-    while steps and result:
-        step_fn = steps.pop()
-        result = step_fn()
-        extra_info.append(result)
-        if not result:
+    is_successful = True
+    while steps and is_successful:
+        step_func = steps.pop()
+        return_value = step_func()
+        messages.append(return_value)
+        if not (is_successful := return_value.get("success")):
             status = "failed"
 
-    extra_info.append(f"{get_current_time()}: finish check {car_id}")
-    data = {"status": status, "extra_info": extra_info}
+    messages.append(
+        {
+            "timestamp": get_current_time(),
+            "msg": f"finish check {repr(car_id)}",
+        }
+    )
+    data = {"status": status, "messages": messages}
     _ = update_task(task_id, data, session)
     return
 
@@ -161,10 +170,15 @@ def background_check_car(
     session: sqlalchemy.orm.Session,
 ):
     task = schemas.Task(
-        name=f"check {car_id}",
+        name=f"check {repr(car_id)}",
         car_id=car_id,
         status="in progress",
-        extra_info=[f"{get_current_time()}: start check {car_id}"],
+        messages=[
+            {
+                "timestamp": get_current_time(),
+                "msg": f"start check {repr(car_id)}",
+            }
+        ],
     )
     db_task = create_task(task, session)
     background_tasks.add_task(check_car, car_id, db_task.id, garage_client, session)
@@ -197,10 +211,10 @@ def update_task(
     if not task_db:
         raise CarActionsError(f"There is no task with id={task_id}")
     for field, value in data.items():
-        if field == "extra_info":
-            extra_info: list = list(task_db.extra_info)
-            extra_info.extend(value)
-            setattr(task_db, field, extra_info)
+        if field == "messages":
+            messages: list = list(task_db.messages)
+            messages.extend(value)
+            setattr(task_db, field, messages)
         else:
             setattr(task_db, field, value)
     session.commit()

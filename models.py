@@ -10,4 +10,4 @@ class Task(Base):
     name = Column(String)
     car_id = Column(String)
     status = Column(String)
-    extra_info = Column(JSON, default=[])
+    messages = Column(JSON, default=[])
