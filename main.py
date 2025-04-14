@@ -16,7 +16,7 @@ logger = logging.getLogger("uvicorn.error")
 app = FastAPI()
 
 
-engine = create_engine(settings.SQLITE_URL, connect_args=settings.CONNECT_ARGS)
+engine = create_engine(settings.DB_URL, connect_args=settings.CONNECT_ARGS)
 models.Base.metadata.create_all(engine)
 
 

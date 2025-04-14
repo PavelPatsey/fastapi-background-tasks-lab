@@ -18,7 +18,7 @@ GarageClientDepends = Annotated[GarageClient, Depends(get_garage_client)]
 
 def get_sql_engine() -> Engine:
     engine = create_engine(
-        url=settings.SQLITE_URL,
+        url=settings.DB_URL,
         connect_args=settings.CONNECT_ARGS,
     )
     return engine
