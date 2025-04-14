@@ -1,4 +1,5 @@
 import logging
+from functools import partial
 from typing import Callable
 
 import sqlalchemy
@@ -50,7 +51,7 @@ def background_check_car(
     task = _create_task_model(name, car_id)
     db_task = _create_task(task, session)
 
-    steps = [lambda: _check(car_id, garage_client)]
+    steps = [partial(_check, car_id, garage_client)]
     background_tasks.add_task(_run_steps, name, steps, db_task.id, session)
     return db_task
 
@@ -66,11 +67,11 @@ def background_send_for_repair(
     task = _create_task_model(name, car_id)
     db_task = _create_task(task, session)
     steps = [
-        lambda: _check(car_id, garage_client),
-        lambda: _get_problems(car_id, garage_client),
-        lambda: _add_problem(car_id, problem, garage_client),
-        lambda: _get_problems(car_id, garage_client),
-        lambda: _update_status(car_id, garage_client),
+        partial(_check, car_id, garage_client),
+        partial(_get_problems, car_id, garage_client),
+        partial(_add_problem, car_id, problem, garage_client),
+        partial(_get_problems, car_id, garage_client),
+        partial(_update_status, car_id, garage_client),
     ][::-1]
     background_tasks.add_task(_run_steps, name, steps, db_task.id, session)
     return db_task
@@ -86,11 +87,11 @@ def background_send_to_parking(
     task = _create_task_model(name, car_id)
     db_task = _create_task(task, session)
     steps = [
-        lambda: _check(car_id, garage_client),
-        lambda: _get_problems(car_id, garage_client),
-        lambda: _fix_problems(car_id, garage_client),
-        lambda: _get_problems(car_id, garage_client),
-        lambda: _update_status(car_id, garage_client),
+        partial(_check, car_id, garage_client),
+        partial(_get_problems, car_id, garage_client),
+        partial(_fix_problems, car_id, garage_client),
+        partial(_get_problems, car_id, garage_client),
+        partial(_update_status, car_id, garage_client),
     ][::-1]
     background_tasks.add_task(_run_steps, name, steps, db_task.id, session)
     return db_task
