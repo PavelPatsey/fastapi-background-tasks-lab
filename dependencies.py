@@ -24,12 +24,12 @@ def get_sql_engine() -> Engine:
     return engine
 
 
-SQLEngineDepends = Annotated[Engine, Depends(get_sql_engine)]
+EngineDepends = Annotated[Engine, Depends(get_sql_engine)]
 
 
-def get_session(engine: SQLEngineDepends) -> Generator[Session, Any, None]:
+def get_session(engine: EngineDepends) -> Generator[Session, Any, None]:
     with Session(engine) as session:
         yield session
 
 
-SQLSessionDepends = Annotated[Session, Depends(get_session)]
+SessionDepends = Annotated[Session, Depends(get_session)]

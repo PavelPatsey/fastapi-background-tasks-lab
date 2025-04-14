@@ -38,7 +38,7 @@ async def check_car(
     car_id: str,
     garage_client: dependencies.GarageClientDepends,
     background_tasks: BackgroundTasks,
-    session: dependencies.SQLSessionDepends,
+    session: dependencies.SessionDepends,
 ):
     try:
         db_task = actions.background_check_car(
@@ -64,7 +64,7 @@ async def send_for_repair_car(
     problem: str,
     garage_client: dependencies.GarageClientDepends,
     background_tasks: BackgroundTasks,
-    session: dependencies.SQLSessionDepends,
+    session: dependencies.SessionDepends,
 ):
     try:
         db_task = actions.background_send_for_repair(
@@ -90,7 +90,7 @@ async def send_to_parking(
     car_id: str,
     garage_client: dependencies.GarageClientDepends,
     background_tasks: BackgroundTasks,
-    session: dependencies.SQLSessionDepends,
+    session: dependencies.SessionDepends,
 ):
     try:
         db_task = actions.background_send_to_parking(
@@ -110,7 +110,7 @@ async def send_to_parking(
 
 @app.get("/tasks/", response_model=schemas.TaskList)
 def read_tasks(
-    session: dependencies.SQLSessionDepends,
+    session: dependencies.SessionDepends,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
 ) -> schemas.TaskList:
@@ -120,7 +120,7 @@ def read_tasks(
 
 
 @app.get("/tasks/{task_id}", response_model=schemas.Task)
-def read_task(task_id: int, session: dependencies.SQLSessionDepends) -> schemas.Task:
+def read_task(task_id: int, session: dependencies.SessionDepends) -> schemas.Task:
     task = session.get(models.Task, task_id)
     if not task:
         raise HTTPException(status_code=404, detail=f"Task with id={task_id} not found")
