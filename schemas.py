@@ -67,7 +67,7 @@ class TaskBase(BaseModel):
     name: str
     car_id: str
     status: TaskStatuses
-    # messages: MessageList # todo: need to fix
+    messages: list[Message] = []
 
 
 class TaskCreate(TaskBase):

@@ -13,7 +13,9 @@ class Task(Base):
     name: Mapped[str] = mapped_column(String(30), nullable=False)
     car_id: Mapped[str] = mapped_column(String(30), nullable=False)
     status: Mapped[str] = mapped_column(String(30), nullable=False)
-    messages: Mapped[list["Message"]] = relationship(back_populates="task")
+    messages: Mapped[list["Message"]] = relationship(
+        back_populates="task", order_by="Message.id"
+    )
 
 
 class Message(Base):
