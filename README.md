@@ -2,6 +2,7 @@
 Проект для экспериментов с background тасками в FastAPI.
 
 # Разаработка
+Версия python 3.11
 ```
 python -m venv .venv
 source .venv/Scripts/activate
