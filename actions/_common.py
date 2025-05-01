@@ -6,10 +6,14 @@ import sqlalchemy
 from fastapi import BackgroundTasks
 
 from garage import GarageClient
+from repo import create_message, create_task, create_task_model, update_task
 
 from ._garage import _add_problem, _check, _fix_problems, _get_problems, _update_status
-from ._messages import create_message
-from ._tasks import _create_task, _create_task_model, _update_task
+
+
+class CarActionsError(Exception):
+    pass
+
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -30,7 +34,7 @@ def _run_steps(
             status = "failed"
     _ = create_message({"msg": f"finish {name}", "status": status}, task_id, session)
     data = {"status": status}
-    _ = _update_task(task_id, data, session)
+    _ = update_task(task_id, data, session)
     return
 
 
@@ -41,8 +45,8 @@ def background_check_car(
     session: sqlalchemy.orm.Session,
 ):
     name = f"check {repr(car_id)}"
-    task = _create_task_model(name, car_id)
-    db_task = _create_task(task, session)
+    task = create_task_model(name, car_id)
+    db_task = create_task(task, session)
     _ = create_message({"msg": f"start {name}"}, db_task.id, session)
 
     steps = [partial(_check, car_id, garage_client)]
@@ -58,8 +62,8 @@ def background_send_for_repair(
     session: sqlalchemy.orm.Session,
 ):
     name = f"send for repair {repr(car_id)} with problem {repr(problem)}"
-    task = _create_task_model(name, car_id)
-    db_task = _create_task(task, session)
+    task = create_task_model(name, car_id)
+    db_task = create_task(task, session)
     _ = create_message({"msg": f"start {name}"}, db_task.id, session)
     steps = [
         partial(_check, car_id, garage_client),
@@ -79,8 +83,8 @@ def background_send_to_parking(
     session: sqlalchemy.orm.Session,
 ):
     name = f"send to parking car {repr(car_id)}"
-    task = _create_task_model(name, car_id)
-    db_task = _create_task(task, session)
+    task = create_task_model(name, car_id)
+    db_task = create_task(task, session)
     _ = create_message({"msg": f"start {name}"}, db_task.id, session)
     steps = [
         partial(_check, car_id, garage_client),
