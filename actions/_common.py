@@ -8,7 +8,7 @@ from fastapi import BackgroundTasks
 from garage import GarageClient
 
 from ._garage import _add_problem, _check, _fix_problems, _get_problems, _update_status
-from ._helpers import get_current_time
+from ._messages import create_message
 from ._tasks import _create_task, _create_task_model, _update_task
 
 logger = logging.getLogger("uvicorn.error")
@@ -20,23 +20,16 @@ def _run_steps(
     task_id: int,
     session: sqlalchemy.orm.Session,
 ):
-    messages = []
     status = "completed"
     is_successful = True
     while steps and is_successful:
         step_func = steps.pop()
         return_value = step_func()
-        messages.append(return_value)
+        _ = create_message(return_value, task_id, session)
         if not (is_successful := return_value.get("success")):
             status = "failed"
-
-    messages.append(
-        {
-            "timestamp": get_current_time(),
-            "msg": f"finish {name}",
-        }
-    )
-    data = {"status": status, "messages": messages}
+    _ = create_message({"msg": f"finish {name}", "status": status}, task_id, session)
+    data = {"status": status}
     _ = _update_task(task_id, data, session)
     return
 
@@ -50,6 +43,7 @@ def background_check_car(
     name = f"check {repr(car_id)}"
     task = _create_task_model(name, car_id)
     db_task = _create_task(task, session)
+    _ = create_message({"msg": f"start {name}"}, db_task.id, session)
 
     steps = [partial(_check, car_id, garage_client)]
     background_tasks.add_task(_run_steps, name, steps, db_task.id, session)

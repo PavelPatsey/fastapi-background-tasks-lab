@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import JSON, ForeignKey, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -20,5 +20,6 @@ class Message(Base):
     __tablename__ = "messages"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    body: Mapped[dict] = mapped_column(JSON, default={})
     task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"))
     task: Mapped["Task"] = relationship(back_populates="messages")

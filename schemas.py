@@ -1,3 +1,5 @@
+import enum
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -29,14 +31,55 @@ class SendToParkingCar(BaseModel):
     message: str
 
 
-class Task(BaseModel):
+class MessageBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int | None = None
+    body: dict
+    task_id: int
+
+
+class MessageCreate(MessageBase):
+    pass
+
+
+class MessageUpdate(MessageBase):
+    pass
+
+
+class Message(MessageBase):
+    id: int
+
+
+class MessageList(BaseModel):
+    messages: list[Message]
+
+
+class TaskStatuses(enum.StrEnum):
+    completed = "completed"
+    failed = "failed"
+    in_progress = "in progress"
+
+
+class TaskBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     name: str
     car_id: str
-    status: str
-    messages: list = []
+    status: TaskStatuses
+    # messages: MessageList # todo: need to fix
+
+
+class TaskCreate(TaskBase):
+    pass
+
+
+class TaskUpdate(TaskBase):
+    pass
+
+
+class Task(TaskBase):
+    id: int
 
 
 class TaskList(BaseModel):

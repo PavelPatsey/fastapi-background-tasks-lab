@@ -7,21 +7,15 @@ from ._helpers import CarActionsError, get_current_time
 
 
 def _create_task_model(name: str, car_id: str):
-    return schemas.Task(
+    return schemas.TaskCreate(
         name=name,
         car_id=car_id,
         status="in progress",
-        messages=[
-            {
-                "timestamp": get_current_time(),
-                "msg": f"start {name}",
-            }
-        ],
     )
 
 
 def _create_task(
-    task: schemas.Task,
+    task: schemas.TaskCreate,
     session: sqlalchemy.orm.Session,
 ) -> models.Task:
     task_data = task.model_dump()
@@ -41,12 +35,7 @@ def _update_task(
     if not task_db:
         raise CarActionsError(f"There is no task with id={task_id}")
     for field, value in data.items():
-        if field == "messages":
-            messages: list = list(task_db.messages)
-            messages.extend(value)
-            setattr(task_db, field, messages)
-        else:
-            setattr(task_db, field, value)
+        setattr(task_db, field, value)
     session.commit()
     session.refresh(task_db)
     return task_db
