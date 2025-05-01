@@ -4,7 +4,7 @@ import models
 import schemas
 
 
-class RepoError(Exception):
+class RepoTasksError(Exception):
     pass
 
 
@@ -35,7 +35,7 @@ def update_task(
 ) -> models.Task:
     task_db: models.Task = session.get(models.Task, task_id)
     if not task_db:
-        raise RepoError(f"There is no task with id={task_id}")
+        raise RepoTasksError(f"There is no task with id={task_id}")
     for field, value in data.items():
         setattr(task_db, field, value)
     session.commit()
