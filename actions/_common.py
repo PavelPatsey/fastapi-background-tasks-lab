@@ -60,6 +60,7 @@ def background_send_for_repair(
     name = f"send for repair {repr(car_id)} with problem {repr(problem)}"
     task = _create_task_model(name, car_id)
     db_task = _create_task(task, session)
+    _ = create_message({"msg": f"start {name}"}, db_task.id, session)
     steps = [
         partial(_check, car_id, garage_client),
         partial(_get_problems, car_id, garage_client),
@@ -80,6 +81,7 @@ def background_send_to_parking(
     name = f"send to parking car {repr(car_id)}"
     task = _create_task_model(name, car_id)
     db_task = _create_task(task, session)
+    _ = create_message({"msg": f"start {name}"}, db_task.id, session)
     steps = [
         partial(_check, car_id, garage_client),
         partial(_get_problems, car_id, garage_client),
