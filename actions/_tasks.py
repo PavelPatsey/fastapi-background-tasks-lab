@@ -3,14 +3,14 @@ import sqlalchemy
 import models
 import schemas
 
-from ._helpers import CarActionsError, get_current_time
+from ._helpers import CarActionsError
 
 
 def _create_task_model(name: str, car_id: str):
     return schemas.TaskCreate(
         name=name,
         car_id=car_id,
-        status="in progress",
+        status=schemas.TaskStatuses.in_progress,
     )
 
 
