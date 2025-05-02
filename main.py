@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 
 import actions
 import dependencies
+import helpers
 import models
 import schemas
 import settings
@@ -24,7 +25,7 @@ models.Base.metadata.create_all(engine)
 async def root():
     return {
         "message": "Hello World",
-        "current_time": actions.get_current_time(),
+        "current_time": helpers.get_current_time(),
     }
 
 

@@ -34,7 +34,6 @@ class SendToParkingCar(BaseModel):
 class MessageBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int | None = None
     body: dict
     task_id: int
 
