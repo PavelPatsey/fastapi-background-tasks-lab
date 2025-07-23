@@ -1,7 +1,6 @@
 import sqlalchemy
 
-import models
-import schemas
+from app import models, schemas
 
 
 class RepoTasksError(Exception):

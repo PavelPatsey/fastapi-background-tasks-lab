@@ -1,7 +1,7 @@
 import logging
 
-from garage import GarageClient
-from helpers import get_current_time
+from app.garage import GarageClient
+from app.helpers import get_current_time
 
 logger = logging.getLogger("uvicorn.error")
 

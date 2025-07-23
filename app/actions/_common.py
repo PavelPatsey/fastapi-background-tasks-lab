@@ -5,8 +5,8 @@ from typing import Callable
 import sqlalchemy
 from fastapi import BackgroundTasks
 
-from garage import GarageClient
-from repo import create_message, create_task, create_task_model, update_task
+from app.garage import GarageClient
+from app.repo import create_message, create_task, create_task_model, update_task
 
 from ._garage import _add_problem, _check, _fix_problems, _get_problems, _update_status
 

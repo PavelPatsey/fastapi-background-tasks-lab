@@ -5,8 +5,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-import settings
-from garage import GarageClient
+from app import settings
+from app.garage import GarageClient
 
 
 def get_garage_client():

@@ -5,12 +5,7 @@ import uvicorn
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, status
 from sqlalchemy import create_engine
 
-import actions
-import dependencies
-import helpers
-import models
-import schemas
-import settings
+from app import actions, dependencies, helpers, models, schemas, settings
 
 logger = logging.getLogger("uvicorn.error")
 

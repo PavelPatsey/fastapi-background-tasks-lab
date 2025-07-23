@@ -1,8 +1,7 @@
 import sqlalchemy
 
-import models
-import schemas
-from helpers import get_current_time
+from app import models, schemas
+from app.helpers import get_current_time
 
 
 def _create_message(

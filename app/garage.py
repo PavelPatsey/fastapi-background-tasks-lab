@@ -1,7 +1,7 @@
 import random
 import time
 
-from schemas import Car, CarList
+from app.schemas import Car, CarList
 
 
 class GarageClientError(Exception):
