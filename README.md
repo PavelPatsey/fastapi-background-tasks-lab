@@ -1,14 +1,33 @@
 # fastapi-background-tasks-lab
 Проект для экспериментов с background тасками в FastAPI.
 
-# Разаработка
-Версия python 3.11
-```
+# Разработка
+**Версия Python:** 3.11
+## Настройка окружения
+Создание виртуального окружения
+```bash
 python -m venv .venv
-source .venv/Scripts/activate
+```
+### Активация
+Windows
+```bash
+.venv\Scripts\activate
+```
+Linux/MacOS
+```bash
+source .venv/bin/activate
+```
+### Установка зависимостей
+```bash
 pip install -r requirements.txt
-# deactivate virtualenv
+```
+### Деактивация окружение
+```bash
 deactivate
+```
+## Запуск тестов
+```bash
+pytest
 ```
 
 # Описание проекта
