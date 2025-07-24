@@ -3,7 +3,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.repo import create_task, create_task_model
+from app.repo import RepoTasksError, create_task, create_task_model, update_task
 
 
 def test_create_task_model():
@@ -54,3 +54,23 @@ def test_create_task(session: Session):
     assert task.car_id == car_id
     assert task.status == "in progress"
     assert task.messages == []
+
+
+def test_update_task(session: Session):
+    name = "test task name"
+    car_id = "test car id"
+    task_in = create_task_model(name, car_id)
+    task = create_task(task=task_in, session=session)
+
+    data = {"status": schemas.TaskStatuses.completed}
+    task = update_task(task_id=task.id, data=data, session=session)
+    assert task.status == schemas.TaskStatuses.completed
+
+
+def test_update_task_invalid_task_id(session: Session):
+    data = {"status": schemas.TaskStatuses.completed}
+
+    with pytest.raises(RepoTasksError) as exc_info:
+        update_task(task_id=1, data=data, session=session)
+
+    assert str(exc_info.value) == "There is no task with id=1"
