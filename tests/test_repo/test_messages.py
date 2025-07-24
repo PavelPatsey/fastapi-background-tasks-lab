@@ -52,3 +52,4 @@ def test_create_message(session: Session):
     assert message.body == body
     assert message.task_id == task_id
     assert message.task == task
+    assert task.messages == [message]
