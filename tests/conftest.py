@@ -12,8 +12,8 @@ from app.models import Base
 def session_fixture():
     engine = create_engine("sqlite:///fake_database.db")
     Base.metadata.create_all(bind=engine)
-    session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    with session_local() as session:
+    session_maker = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    with session_maker() as session:
         yield session
     Base.metadata.drop_all(bind=engine)
 
