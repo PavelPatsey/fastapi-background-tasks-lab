@@ -48,3 +48,9 @@ def test_read_task_by_id(client: TestClient, session: Session):
         "status": "in progress",
         "messages": [],
     }
+
+
+def test_read_task_by_invalid_id(client: TestClient, session: Session):
+    response = client.get("/tasks/1")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json() == {"detail": "Task with id=1 not found"}
