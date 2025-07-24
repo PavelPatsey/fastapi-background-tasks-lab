@@ -11,6 +11,10 @@ def test_create_task_model():
     car_id = "test car id"
     task = create_task_model(name, car_id)
     assert isinstance(task, schemas.TaskCreate)
+    assert hasattr(task, "name")
+    assert hasattr(task, "car_id")
+    assert hasattr(task, "status")
+    assert hasattr(task, "messages")
     assert task.model_dump() == {
         "name": "test task name",
         "car_id": "test car id",
