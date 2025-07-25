@@ -19,7 +19,7 @@ models.Base.metadata.create_all(engine)
 
 
 @app.get("/", tags=["common"])
-async def root():
+async def root() -> dict:
     uptime = (datetime.now() - app_launch_time).total_seconds()
     return {
         "message": "Hello World",
@@ -29,7 +29,7 @@ async def root():
 
 
 @app.get("/cars", tags=["cars"], response_model=schemas.CarList)
-def get_cars(garage_client: dependencies.GarageClientDepends):
+def get_cars(garage_client: dependencies.GarageClientDepends) -> schemas.CarList:
     return garage_client.get_car_list()
 
 
@@ -43,7 +43,7 @@ async def check_car(
     garage_client: dependencies.GarageClientDepends,
     background_tasks: BackgroundTasks,
     session: dependencies.SessionDepends,
-) -> schemas.Task:
+) -> models.Task:
     try:
         task = actions.background_check_car(
             car_id,
@@ -67,7 +67,7 @@ async def send_for_repair_car(
     garage_client: dependencies.GarageClientDepends,
     background_tasks: BackgroundTasks,
     session: dependencies.SessionDepends,
-) -> schemas.Task:
+) -> models.Task:
     try:
         task = actions.background_send_for_repair(
             car_id,
@@ -91,7 +91,7 @@ async def send_to_parking(
     garage_client: dependencies.GarageClientDepends,
     background_tasks: BackgroundTasks,
     session: dependencies.SessionDepends,
-) -> schemas.Task:
+) -> models.Task:
     try:
         task = actions.background_send_to_parking(
             car_id,

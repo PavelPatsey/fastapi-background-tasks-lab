@@ -4,6 +4,7 @@ from functools import partial
 import sqlalchemy
 from fastapi import BackgroundTasks
 
+from app import models
 from app.garage import GarageClient
 from app.repo import create_task
 
@@ -23,7 +24,7 @@ def background_check_car(
     garage_client: GarageClient,
     background_tasks: BackgroundTasks,
     session: sqlalchemy.orm.Session,
-):
+) -> models.Task:
     name = f"check {repr(car_id)}"
     task = create_task(name, car_id, session)
     steps = [partial(_check, car_id, garage_client)]
@@ -37,7 +38,7 @@ def background_send_for_repair(
     garage_client: GarageClient,
     background_tasks: BackgroundTasks,
     session: sqlalchemy.orm.Session,
-):
+) -> models.Task:
     name = f"send car {repr(car_id)} for repair with problem {repr(problem)}"
     task = create_task(name, car_id, session)
     steps = [
@@ -56,7 +57,7 @@ def background_send_to_parking(
     garage_client: GarageClient,
     background_tasks: BackgroundTasks,
     session: sqlalchemy.orm.Session,
-):
+) -> models.Task:
     name = f"send car {repr(car_id)} to parking"
     task = create_task(name, car_id, session)
     steps = [
