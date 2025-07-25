@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Annotated
 
 import uvicorn
@@ -10,6 +11,7 @@ from app import actions, dependencies, helpers, models, schemas, settings
 logger = logging.getLogger("uvicorn.error")
 
 app = FastAPI()
+app_launch_time = datetime.now()
 
 
 engine = create_engine(settings.DB_URL, connect_args=settings.CONNECT_ARGS)
@@ -18,9 +20,11 @@ models.Base.metadata.create_all(engine)
 
 @app.get("/", tags=["common"])
 async def root():
+    uptime = (datetime.now() - app_launch_time).total_seconds()
     return {
         "message": "Hello World",
         "current_time": helpers.get_current_time(),
+        "current_uptime": int(uptime),
     }
 
 

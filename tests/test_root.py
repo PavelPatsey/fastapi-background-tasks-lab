@@ -8,3 +8,4 @@ def test_root(client: TestClient):
     response_json = response.json()
     assert response_json["message"] == "Hello World"
     assert "current_time" in response_json
+    assert "current_uptime" in response_json
