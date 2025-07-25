@@ -2,7 +2,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 
 
-def test_root(client: TestClient):
+def test_get_cars(client: TestClient):
     response = client.get("/cars")
     assert response.status_code == status.HTTP_200_OK
     response_json = response.json()
