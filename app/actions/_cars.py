@@ -12,14 +12,14 @@ from ._garage import _add_problem, _check, _fix_problems, _get_problems, _update
 from ._runner import _run_steps
 
 
-class CarActionsError(Exception):
+class ActionsCarsError(Exception):
     pass
 
 
 logger = logging.getLogger("uvicorn.error")
 
 
-def background_check_car(
+def check_car(
     car_id: str,
     garage_client: GarageClient,
     background_tasks: BackgroundTasks,
@@ -32,7 +32,7 @@ def background_check_car(
     return task
 
 
-def background_send_for_repair(
+def send_for_repair(
     car_id: str,
     problem: str,
     garage_client: GarageClient,
@@ -52,7 +52,7 @@ def background_send_for_repair(
     return task
 
 
-def background_send_to_parking(
+def send_to_parking(
     car_id: str,
     garage_client: GarageClient,
     background_tasks: BackgroundTasks,

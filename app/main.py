@@ -45,13 +45,13 @@ async def check_car(
     session: dependencies.SessionDepends,
 ) -> models.Task:
     try:
-        task = actions.background_check_car(
+        task = actions.check_car(
             car_id,
             garage_client,
             background_tasks,
             session,
         )
-    except actions.CarActionsError as err:
+    except actions.ActionsCarsError as err:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err))
     return task
 
@@ -69,14 +69,14 @@ async def send_for_repair_car(
     session: dependencies.SessionDepends,
 ) -> models.Task:
     try:
-        task = actions.background_send_for_repair(
+        task = actions.send_for_repair(
             car_id,
             problem,
             garage_client,
             background_tasks,
             session,
         )
-    except actions.CarActionsError as err:
+    except actions.ActionsCarsError as err:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err))
     return task
 
@@ -93,13 +93,13 @@ async def send_to_parking(
     session: dependencies.SessionDepends,
 ) -> models.Task:
     try:
-        task = actions.background_send_to_parking(
+        task = actions.send_to_parking(
             car_id,
             garage_client,
             background_tasks,
             session,
         )
-    except actions.CarActionsError as err:
+    except actions.ActionsCarsError as err:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err))
     return task
 
