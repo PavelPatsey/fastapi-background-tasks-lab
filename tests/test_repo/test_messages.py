@@ -3,21 +3,21 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.repo import create_message, create_task, create_task_model
+from app.repo import create_message, create_task
 
 
 def test_message_schema():
-    body = {"msg": "test message"}
+    body = "test message"
     task_id = 1
     message = schemas.MessageCreate(body=body, task_id=task_id)
     assert isinstance(message, schemas.MessageCreate)
     assert hasattr(message, "body")
     assert hasattr(message, "task_id")
-    assert message.model_dump() == {"body": {"msg": "test message"}, "task_id": 1}
+    assert message.model_dump() == {"body": "test message", "task_id": 1}
 
 
 def test_create_message_model_invalid_task_id():
-    body = {"msg": "test message"}
+    body = "test message"
     task_id = "string"
 
     with pytest.raises(ValidationError) as exc_info:
@@ -36,10 +36,9 @@ def test_create_message_model_invalid_task_id():
 def test_create_message(session: Session):
     name = "test task name"
     car_id = "test car id"
-    task_in = create_task_model(name, car_id)
-    task = create_task(task=task_in, session=session)
+    task = create_task(name=name, car_id=car_id, session=session)
 
-    body = {"msg": "test message for create"}
+    body = "test message for create"
     task_id = task.id
     message = create_message(body=body, task_id=task_id, session=session)
 

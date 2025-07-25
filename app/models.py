@@ -1,4 +1,6 @@
-from sqlalchemy import JSON, ForeignKey, String
+from datetime import datetime
+
+from sqlalchemy import ForeignKey, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -13,6 +15,12 @@ class Task(Base):
     name: Mapped[str] = mapped_column(String(30), nullable=False)
     car_id: Mapped[str] = mapped_column(String(30), nullable=False)
     status: Mapped[str] = mapped_column(String(30), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        nullable=False, insert_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        nullable=False, insert_default=func.now(), server_onupdate=func.now()
+    )
     messages: Mapped[list["Message"]] = relationship(
         back_populates="task", order_by="Message.id"
     )
@@ -22,6 +30,9 @@ class Message(Base):
     __tablename__ = "messages"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    body: Mapped[dict] = mapped_column(JSON, default={})
+    body: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        nullable=False, insert_default=func.now()
+    )
     task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"))
     task: Mapped["Task"] = relationship(back_populates="messages")

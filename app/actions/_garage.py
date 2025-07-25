@@ -6,19 +6,18 @@ from app.helpers import get_current_time
 logger = logging.getLogger("uvicorn.error")
 
 
+class ActionsGarageError(Exception):
+    pass
+
+
 def _check(car_id: str, garage_client: GarageClient) -> dict:
-    result = {}
     try:
-        response = garage_client.check(car_id)
-        result["response"] = response
-        result["success"] = True
+        result = garage_client.check(car_id)
     except Exception as err:
         msg = f"Error while trying to check car {repr(car_id)}!"
         logger.error("msg: %s\nerr: %s\ntype(err): %s", msg, err, type(err))
-        result["error"] = msg
-        result["success"] = False
-    result["timestamp"] = get_current_time()
-    return result
+        raise ActionsGarageError(msg)
+    return result, f"Ping {repr(car_id)}: Ok"
 
 
 def _get_problems(car_id: str, garage_client: GarageClient) -> dict:

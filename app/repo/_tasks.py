@@ -7,20 +7,18 @@ class RepoTasksError(Exception):
     pass
 
 
-def create_task_model(name: str, car_id: str):
-    return schemas.TaskCreate(
+def create_task(
+    name: str,
+    car_id: str,
+    session: sqlalchemy.orm.Session,
+) -> models.Task:
+    task_in = schemas.TaskCreate(
         name=name,
         car_id=car_id,
         status=schemas.TaskStatuses.in_progress,
     )
-
-
-def create_task(
-    task: schemas.TaskCreate,
-    session: sqlalchemy.orm.Session,
-) -> models.Task:
-    task_data = task.model_dump()
-    db_task = models.Task(**task_data)
+    data = task_in.model_dump()
+    db_task = models.Task(**data)
     session.add(db_task)
     session.commit()
     session.refresh(db_task)

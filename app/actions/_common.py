@@ -5,10 +5,18 @@ from typing import Callable
 import sqlalchemy
 from fastapi import BackgroundTasks
 
+from app import schemas
 from app.garage import GarageClient
-from app.repo import create_message, create_task, create_task_model, update_task
+from app.repo import create_message, create_task, update_task
 
-from ._garage import _add_problem, _check, _fix_problems, _get_problems, _update_status
+from ._garage import (
+    ActionsGarageError,
+    _add_problem,
+    _check,
+    _fix_problems,
+    _get_problems,
+    _update_status,
+)
 
 
 class CarActionsError(Exception):
@@ -26,16 +34,20 @@ def _run_steps(
 ):
     status = "completed"
     is_successful = True
+    _msg = create_message(f"Start {name}", task_id, session)
     while steps and is_successful:
         step_func = steps.pop()
-        return_value = step_func()
-        _ = create_message(return_value, task_id, session)
-        if not (is_successful := return_value.get("success")):
-            status = "failed"
-    _ = create_message({"msg": f"finish {name}", "status": status}, task_id, session)
-    data = {"status": status}
-    _ = update_task(task_id, data, session)
-    return
+        msg = None
+        try:
+            _res, msg = step_func()
+        except ActionsGarageError as err:
+            status = schemas.TaskStatuses.failed
+            is_successful = False
+            msg = str(err)
+        finally:
+            _ = create_message(msg, task_id, session)
+    _msg = create_message(f"End {name}", task_id, session)
+    return update_task(task_id, {"status": status}, session)
 
 
 def background_check_car(
@@ -45,13 +57,10 @@ def background_check_car(
     session: sqlalchemy.orm.Session,
 ):
     name = f"check {repr(car_id)}"
-    task = create_task_model(name, car_id)
-    db_task = create_task(task, session)
-    _ = create_message({"msg": f"start {name}"}, db_task.id, session)
-
+    task = create_task(name, car_id, session)
     steps = [partial(_check, car_id, garage_client)]
-    background_tasks.add_task(_run_steps, name, steps, db_task.id, session)
-    return db_task
+    background_tasks.add_task(_run_steps, name, steps, task.id, session)
+    return task
 
 
 def background_send_for_repair(

@@ -1,4 +1,5 @@
 import enum
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
@@ -34,7 +35,7 @@ class SendToParkingCar(BaseModel):
 class MessageBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    body: dict
+    body: str
     task_id: int
 
 
@@ -48,6 +49,7 @@ class MessageUpdate(MessageBase):
 
 class Message(MessageBase):
     id: int
+    created_at: datetime
 
 
 class MessageList(BaseModel):

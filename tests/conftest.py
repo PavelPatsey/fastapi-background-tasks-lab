@@ -10,7 +10,7 @@ from app.models import Base
 
 @pytest.fixture(name="session")
 def session_fixture():
-    engine = create_engine("sqlite:///fake_database.db")
+    engine = create_engine("sqlite:///tests/fake_database.db")
     Base.metadata.create_all(bind=engine)
     session_maker = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     with session_maker() as session:
