@@ -3,39 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-
-class Car(BaseModel):
-    car_id: str
-    status: str
-    problems: list[str]
-
-
-class CarList(BaseModel):
-    cars: list[Car]
-
-
-class MessageBase(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    body: str
-    task_id: int
-
-
-class MessageCreate(MessageBase):
-    pass
-
-
-class MessageUpdate(MessageBase):
-    pass
-
-
-class Message(MessageBase):
-    id: int
-    created_at: datetime
-
-
-class MessageList(BaseModel):
-    messages: list[Message]
+from ._messages import Message
 
 
 class TaskStatuses(enum.StrEnum):
@@ -56,6 +24,7 @@ class TaskCreate(TaskBase):
     status: TaskStatuses = TaskStatuses.in_progress
 
 
+# todo: use it in repo
 class TaskUpdate(TaskBase):
     pass
 
