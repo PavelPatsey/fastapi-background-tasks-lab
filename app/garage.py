@@ -44,33 +44,33 @@ class GarageClient:
             return {car_id: True}
         raise GarageClientError(f"Car {car_id} does not exist!")
 
-    def get_problems(self, car_id: str):
+    def get_problems(self, car_id: str) -> dict:
         time.sleep(self.SLEEP_DURATION)
         if car_id in self.car_db:
             car = self.car_db[car_id]
-            return {car_id: True, "problems": car["problems"]}
+            return {car_id: car["problems"]}
         raise GarageClientError(f"Car {car_id} does not exist!")
 
-    def add_problem(self, car_id: str, problem: str):
+    def add_problem(self, car_id: str, problem: str) -> dict:
         time.sleep(self.SLEEP_DURATION)
         if car_id in self.car_db:
             car = self.car_db[car_id]
             car["problems"].append(problem)
-            return {car_id: True, "problems": car["problems"]}
+            return {car_id: car["problems"]}
         raise GarageClientError(f"Car {car_id} does not exist!")
 
-    def fix_problems(self, car_id: str):
+    def fix_problems(self, car_id: str) -> dict:
         time.sleep(self.SLEEP_DURATION)
         if car_id in self.car_db:
             car = self.car_db[car_id]
             car["problems"] = []
-            return {car_id: True, "problems": car["problems"]}
+            return {car_id: car["problems"]}
         raise GarageClientError(f"Car {car_id} does not exist!")
 
-    def update_status(self, car_id: str):
+    def update_status(self, car_id: str) -> dict:
         time.sleep(self.SLEEP_DURATION)
         if _random_with_probability(self.UPDATE_STATUS_PROBABILITY):
             car = self.car_db[car_id]
             car["status"] = "under repair" if car["problems"] else "ok"
-            return {car_id: True, "status": car["status"]}
+            return {car_id: car["status"]}
         raise GarageClientError(f"Error while updating status of car {car_id}!")

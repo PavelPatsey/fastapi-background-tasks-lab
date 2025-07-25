@@ -70,10 +70,8 @@ def background_send_for_repair(
     background_tasks: BackgroundTasks,
     session: sqlalchemy.orm.Session,
 ):
-    name = f"send for repair {repr(car_id)} with problem {repr(problem)}"
-    task = create_task_model(name, car_id)
-    db_task = create_task(task, session)
-    _ = create_message({"msg": f"start {name}"}, db_task.id, session)
+    name = f"send car {repr(car_id)} for repair with problem {repr(problem)}"
+    task = create_task(name, car_id, session)
     steps = [
         partial(_check, car_id, garage_client),
         partial(_get_problems, car_id, garage_client),
@@ -81,8 +79,8 @@ def background_send_for_repair(
         partial(_get_problems, car_id, garage_client),
         partial(_update_status, car_id, garage_client),
     ][::-1]
-    background_tasks.add_task(_run_steps, name, steps, db_task.id, session)
-    return db_task
+    background_tasks.add_task(_run_steps, name, steps, task.id, session)
+    return task
 
 
 def background_send_to_parking(
@@ -91,10 +89,8 @@ def background_send_to_parking(
     background_tasks: BackgroundTasks,
     session: sqlalchemy.orm.Session,
 ):
-    name = f"send to parking car {repr(car_id)}"
-    task = create_task_model(name, car_id)
-    db_task = create_task(task, session)
-    _ = create_message({"msg": f"start {name}"}, db_task.id, session)
+    name = f"send car {repr(car_id)} to parking"
+    task = create_task(name, car_id, session)
     steps = [
         partial(_check, car_id, garage_client),
         partial(_get_problems, car_id, garage_client),
@@ -102,5 +98,5 @@ def background_send_to_parking(
         partial(_get_problems, car_id, garage_client),
         partial(_update_status, car_id, garage_client),
     ][::-1]
-    background_tasks.add_task(_run_steps, name, steps, db_task.id, session)
-    return db_task
+    background_tasks.add_task(_run_steps, name, steps, task.id, session)
+    return task
