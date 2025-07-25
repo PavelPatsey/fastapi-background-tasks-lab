@@ -41,13 +41,15 @@ def test_read_task_by_id(client: TestClient, session: Session):
 
     response = client.get("/tasks/1")
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {
-        "id": 1,
-        "name": "test task 1",
-        "car_id": "car_1",
-        "status": "in progress",
-        "messages": [],
-    }
+    response_json = response.json()
+    assert response_json["id"] == 1
+    assert response_json["name"] == "test task 1"
+    assert response_json["car_id"] == "car_1"
+    assert response_json["car_id"] == "car_1"
+    assert response_json["status"] == "in progress"
+    assert response_json["messages"] == []
+    assert "created_at" in response_json
+    assert "updated_at" in response_json
 
 
 def test_read_task_by_invalid_id(client: TestClient, session: Session):

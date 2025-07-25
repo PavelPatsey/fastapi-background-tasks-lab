@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 import sqlalchemy
 
 from app import models, schemas
@@ -35,6 +37,7 @@ def update_task(
         raise RepoTasksError(f"There is no task with id={task_id}")
     for field, value in data.items():
         setattr(task_db, field, value)
+    setattr(task_db, "updated_at", datetime.now(UTC).replace(microsecond=0))
     session.commit()
     session.refresh(task_db)
     return task_db

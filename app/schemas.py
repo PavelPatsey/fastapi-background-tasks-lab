@@ -68,11 +68,10 @@ class TaskBase(BaseModel):
     name: str
     car_id: str
     status: TaskStatuses
-    messages: list[Message] = []
 
 
 class TaskCreate(TaskBase):
-    pass
+    status: TaskStatuses = TaskStatuses.in_progress
 
 
 class TaskUpdate(TaskBase):
@@ -81,6 +80,9 @@ class TaskUpdate(TaskBase):
 
 class Task(TaskBase):
     id: int
+    created_at: datetime
+    updated_at: datetime
+    messages: list[Message]
 
 
 class TaskList(BaseModel):
