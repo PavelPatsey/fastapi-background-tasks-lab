@@ -13,12 +13,18 @@ def test_send_for_repair(client: TestClient, session: Session):
     )
     assert response.status_code == status.HTTP_200_OK
     response_json = response.json()
-    assert response_json == {
-        "car_id": "car_1",
-        "task_id": 1,
-        "message": "ok",
-    }
-    task = session.get(models.Task, response_json["task_id"])
+    assert response_json["id"] == 1
+    assert (
+        response_json["name"]
+        == "send car 'car_1' for repair with problem 'test car problem'"
+    )
+    assert response_json["car_id"] == "car_1"
+    assert response_json["status"] == "in progress"
+    assert response_json["messages"] == []
+    assert "created_at" in response_json
+    assert "updated_at" in response_json
+
+    task = session.get(models.Task, response_json["id"])
     assert task.status == schemas.TaskStatuses.completed
     assert [msg.body for msg in task.messages] == [
         "Start send car 'car_1' for repair with problem 'test car problem'",
@@ -39,12 +45,7 @@ def test_repair_error_while_trying_to_check(client: TestClient, session: Session
     )
     assert response.status_code == status.HTTP_200_OK
     response_json = response.json()
-    assert response_json == {
-        "car_id": "invalid_repair_car",
-        "task_id": 1,
-        "message": "ok",
-    }
-    task = session.get(models.Task, response_json["task_id"])
+    task = session.get(models.Task, response_json["id"])
     assert task.status == schemas.TaskStatuses.failed
     assert [msg.body for msg in task.messages] == [
         f"Start send car '{car_id}' for repair with problem '{test_problem}'",

@@ -14,24 +14,6 @@ class CarList(BaseModel):
     cars: list[Car]
 
 
-class CheckCar(BaseModel):
-    car_id: str
-    task_id: int
-    message: str
-
-
-class SendForRepairCar(BaseModel):
-    car_id: str
-    task_id: int
-    message: str
-
-
-class SendToParkingCar(BaseModel):
-    car_id: str
-    task_id: int
-    message: str
-
-
 class MessageBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

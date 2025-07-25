@@ -10,13 +10,15 @@ def test_check_car(client: TestClient, session: Session):
     response = client.post(f"/cars/{car_id}/actions/check")
     assert response.status_code == status.HTTP_200_OK
     response_json = response.json()
-    assert response_json == {
-        "car_id": "car_1",
-        "task_id": 1,
-        "message": "ok",
-    }
-    task_id = response_json["task_id"]
-    task = session.get(models.Task, task_id)
+    assert response_json["id"] == 1
+    assert response_json["name"] == "check 'car_1'"
+    assert response_json["car_id"] == "car_1"
+    assert response_json["status"] == "in progress"
+    assert response_json["messages"] == []
+    assert "created_at" in response_json
+    assert "updated_at" in response_json
+
+    task = session.get(models.Task, response_json["id"])
     assert task.status == schemas.TaskStatuses.completed
     assert [msg.body for msg in task.messages] == [
         "Start check 'car_1'",
@@ -30,13 +32,7 @@ def test_error_while_trying_to_check(client: TestClient, session: Session):
     response = client.post(f"/cars/{car_id}/actions/check")
     assert response.status_code == status.HTTP_200_OK
     response_json = response.json()
-    assert response_json == {
-        "car_id": "invalid_car",
-        "task_id": 1,
-        "message": "ok",
-    }
-    task_id = response_json["task_id"]
-    task = session.get(models.Task, task_id)
+    task = session.get(models.Task, response_json["id"])
     assert task.status == schemas.TaskStatuses.failed
     assert [msg.body for msg in task.messages] == [
         "Start check 'invalid_car'",

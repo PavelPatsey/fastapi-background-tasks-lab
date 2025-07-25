@@ -36,16 +36,16 @@ def get_cars(garage_client: dependencies.GarageClientDepends):
 @app.post(
     "/cars/{car_id}/actions/check",
     tags=["cars"],
-    response_model=schemas.CheckCar,
+    response_model=schemas.Task,
 )
 async def check_car(
     car_id: str,
     garage_client: dependencies.GarageClientDepends,
     background_tasks: BackgroundTasks,
     session: dependencies.SessionDepends,
-):
+) -> schemas.Task:
     try:
-        db_task = actions.background_check_car(
+        task = actions.background_check_car(
             car_id,
             garage_client,
             background_tasks,
@@ -53,17 +53,13 @@ async def check_car(
         )
     except actions.CarActionsError as err:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err))
-    return schemas.CheckCar(
-        car_id=car_id,
-        task_id=db_task.id,
-        message="ok",
-    )
+    return task
 
 
 @app.post(
     "/cars/{car_id}/actions/send_for_repair",
     tags=["cars"],
-    response_model=schemas.SendForRepairCar,
+    response_model=schemas.Task,
 )
 async def send_for_repair_car(
     car_id: str,
@@ -71,9 +67,9 @@ async def send_for_repair_car(
     garage_client: dependencies.GarageClientDepends,
     background_tasks: BackgroundTasks,
     session: dependencies.SessionDepends,
-):
+) -> schemas.Task:
     try:
-        db_task = actions.background_send_for_repair(
+        task = actions.background_send_for_repair(
             car_id,
             problem,
             garage_client,
@@ -82,26 +78,22 @@ async def send_for_repair_car(
         )
     except actions.CarActionsError as err:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err))
-    return schemas.CheckCar(
-        car_id=car_id,
-        task_id=db_task.id,
-        message="ok",
-    )
+    return task
 
 
 @app.post(
     "/cars/{car_id}/actions/send_to_parking",
     tags=["cars"],
-    response_model=schemas.SendToParkingCar,
+    response_model=schemas.Task,
 )
 async def send_to_parking(
     car_id: str,
     garage_client: dependencies.GarageClientDepends,
     background_tasks: BackgroundTasks,
     session: dependencies.SessionDepends,
-):
+) -> schemas.Task:
     try:
-        db_task = actions.background_send_to_parking(
+        task = actions.background_send_to_parking(
             car_id,
             garage_client,
             background_tasks,
@@ -109,11 +101,7 @@ async def send_to_parking(
         )
     except actions.CarActionsError as err:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err))
-    return schemas.CheckCar(
-        car_id=car_id,
-        task_id=db_task.id,
-        message="ok",
-    )
+    return task
 
 
 @app.get("/tasks/", tags=["tasks"], response_model=schemas.TaskList)
