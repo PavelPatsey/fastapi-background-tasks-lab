@@ -1,22 +1,14 @@
 import logging
 from functools import partial
-from typing import Callable
 
 import sqlalchemy
 from fastapi import BackgroundTasks
 
-from app import schemas
 from app.garage import GarageClient
-from app.repo import create_message, create_task, update_task
+from app.repo import create_task
 
-from ._garage import (
-    ActionsGarageError,
-    _add_problem,
-    _check,
-    _fix_problems,
-    _get_problems,
-    _update_status,
-)
+from ._garage import _add_problem, _check, _fix_problems, _get_problems, _update_status
+from ._runner import _run_steps
 
 
 class CarActionsError(Exception):
@@ -24,30 +16,6 @@ class CarActionsError(Exception):
 
 
 logger = logging.getLogger("uvicorn.error")
-
-
-def _run_steps(
-    name: str,
-    steps: list[Callable],
-    task_id: int,
-    session: sqlalchemy.orm.Session,
-):
-    status = "completed"
-    is_successful = True
-    _msg = create_message(f"Start {name}", task_id, session)
-    while steps and is_successful:
-        step_func = steps.pop()
-        msg = None
-        try:
-            _res, msg = step_func()
-        except ActionsGarageError as err:
-            status = schemas.TaskStatuses.failed
-            is_successful = False
-            msg = str(err)
-        finally:
-            _ = create_message(msg, task_id, session)
-    _msg = create_message(f"End {name}", task_id, session)
-    return update_task(task_id, {"status": status}, session)
 
 
 def background_check_car(
