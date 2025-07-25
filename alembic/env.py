@@ -18,8 +18,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 
-import models
-import settings
+from app import models, settings
 
 target_metadata = models.Base.metadata
 
