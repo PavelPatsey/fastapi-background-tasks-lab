@@ -136,7 +136,7 @@ def read_task(task_id: int, session: dependencies.SessionDepends) -> schemas.Tas
 
 
 @app.get("/messages/", tags=["messages"], response_model=schemas.MessageList)
-def read_tasks(
+def read_messages(
     session: dependencies.SessionDepends,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
