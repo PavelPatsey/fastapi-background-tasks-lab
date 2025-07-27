@@ -6,7 +6,7 @@ import uvicorn
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, status
 from sqlalchemy import select
 
-from app import actions, dependencies, helpers, models, schemas
+from app import actions, dependencies, helpers, models, repo, schemas
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -107,11 +107,7 @@ async def read_tasks(
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
 ) -> schemas.TaskList:
-    stmt = (
-        select(models.Task).order_by(models.Task.id.desc()).offset(offset).limit(limit)
-    )
-    result = await session.execute(stmt)
-    tasks = result.scalars().all()
+    tasks = await repo.read_tasks(session, offset, limit)
     tasks = [schemas.Task.model_validate(task) for task in tasks]
     return schemas.TaskList(tasks=tasks)
 

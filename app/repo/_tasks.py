@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import Sequence
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,3 +37,15 @@ async def update_task(task_id: int, data: dict, session: AsyncSession) -> models
     await session.commit()
     await session.refresh(task)
     return task
+
+
+async def read_tasks(
+    session: AsyncSession, offset: int | None = None, limit: int | None = None
+) -> Sequence[models.Task]:
+    stmt = select(models.Task).order_by(models.Task.id.desc())
+    if offset is not None:
+        stmt = stmt.offset(offset)
+    if limit is not None:
+        stmt = stmt.limit(limit)
+    result = await session.execute(stmt)
+    return result.scalars().all()
