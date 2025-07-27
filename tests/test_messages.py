@@ -1,21 +1,23 @@
+import pytest
 from fastapi import status
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models, schemas
 
 
-def test_read_messages(client: TestClient, session: Session):
+@pytest.mark.asyncio
+async def test_read_messages(async_client: AsyncClient, async_session: AsyncSession):
     msg_in_1 = schemas.MessageCreate(body="test msg 1", task_id=1)
     msg_in_2 = schemas.MessageCreate(body="test msg 2", task_id=1)
     msg_1 = models.Message(**msg_in_1.model_dump())
     msg_2 = models.Message(**msg_in_2.model_dump())
 
-    session.add(msg_1)
-    session.add(msg_2)
-    session.commit()
+    async_session.add(msg_1)
+    async_session.add(msg_2)
+    await async_session.commit()
 
-    response = client.get("/messages")
+    response = await async_client.get("/messages")
     assert response.status_code == status.HTTP_200_OK
     response_json = response.json()
     assert len(response_json["messages"]) == 2

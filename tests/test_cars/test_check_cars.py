@@ -1,13 +1,15 @@
+import pytest
 from fastapi import status
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models, schemas
 
 
-def test_check_car(client: TestClient, session: Session):
+@pytest.mark.asyncio
+async def test_check_car(async_client: AsyncClient, async_session: AsyncSession):
     car_id = "car_1"
-    response = client.post(f"/cars/{car_id}/actions/check")
+    response = await async_client.post(f"/cars/{car_id}/actions/check")
     assert response.status_code == status.HTTP_200_OK
     response_json = response.json()
     assert response_json["id"] == 1
@@ -18,7 +20,7 @@ def test_check_car(client: TestClient, session: Session):
     assert "created_at" in response_json
     assert "updated_at" in response_json
 
-    task = session.get(models.Task, response_json["id"])
+    task = await async_session.get(models.Task, response_json["id"])
     assert task.status == schemas.TaskStatuses.completed
     assert [msg.body for msg in task.messages] == [
         "Start check 'car_1'",
@@ -27,12 +29,15 @@ def test_check_car(client: TestClient, session: Session):
     ]
 
 
-def test_error_while_trying_to_check(client: TestClient, session: Session):
+@pytest.mark.asyncio
+async def test_error_while_trying_to_check(
+    async_client: AsyncClient, async_session: AsyncSession
+):
     car_id = "invalid_car"
-    response = client.post(f"/cars/{car_id}/actions/check")
+    response = await async_client.post(f"/cars/{car_id}/actions/check")
     assert response.status_code == status.HTTP_200_OK
     response_json = response.json()
-    task = session.get(models.Task, response_json["id"])
+    task = await async_session.get(models.Task, response_json["id"])
     assert task.status == schemas.TaskStatuses.failed
     assert [msg.body for msg in task.messages] == [
         "Start check 'invalid_car'",

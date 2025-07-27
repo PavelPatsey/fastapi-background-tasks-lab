@@ -1,5 +1,5 @@
+import asyncio
 import random
-import time
 
 from app.schemas import Car, CarList
 
@@ -26,8 +26,8 @@ class GarageClient:
         "car_4": {"car_id": "car_4", "status": "ok", "problems": []},
     }
 
-    def get_car_list(self) -> CarList:
-        time.sleep(self.SLEEP_DURATION)
+    async def get_car_list(self) -> CarList:
+        await asyncio.sleep(self.SLEEP_DURATION)
         cars = [
             Car(
                 car_id=car["car_id"],
@@ -38,37 +38,37 @@ class GarageClient:
         ]
         return CarList(cars=cars)
 
-    def check(self, car_id: str) -> dict:
-        time.sleep(self.SLEEP_DURATION)
+    async def check(self, car_id: str) -> dict:
+        await asyncio.sleep(self.SLEEP_DURATION)
         if car_id in self.car_db:
             return {car_id: True}
         raise GarageClientError(f"Car {car_id} does not exist!")
 
-    def get_problems(self, car_id: str) -> dict:
-        time.sleep(self.SLEEP_DURATION)
+    async def get_problems(self, car_id: str) -> dict:
+        await asyncio.sleep(self.SLEEP_DURATION)
         if car_id in self.car_db:
             car = self.car_db[car_id]
             return {car_id: car["problems"]}
         raise GarageClientError(f"Car {car_id} does not exist!")
 
-    def add_problem(self, car_id: str, problem: str) -> dict:
-        time.sleep(self.SLEEP_DURATION)
+    async def add_problem(self, car_id: str, problem: str) -> dict:
+        await asyncio.sleep(self.SLEEP_DURATION)
         if car_id in self.car_db:
             car = self.car_db[car_id]
             car["problems"].append(problem)
             return {car_id: car["problems"]}
         raise GarageClientError(f"Car {car_id} does not exist!")
 
-    def fix_problems(self, car_id: str) -> dict:
-        time.sleep(self.SLEEP_DURATION)
+    async def fix_problems(self, car_id: str) -> dict:
+        await asyncio.sleep(self.SLEEP_DURATION)
         if car_id in self.car_db:
             car = self.car_db[car_id]
             car["problems"] = []
             return {car_id: car["problems"]}
         raise GarageClientError(f"Car {car_id} does not exist!")
 
-    def update_status(self, car_id: str) -> dict:
-        time.sleep(self.SLEEP_DURATION)
+    async def update_status(self, car_id: str) -> dict:
+        await asyncio.sleep(self.SLEEP_DURATION)
         if _random_with_probability(self.UPDATE_STATUS_PROBABILITY):
             car = self.car_db[car_id]
             car["status"] = "under repair" if car["problems"] else "ok"

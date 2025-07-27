@@ -1,9 +1,11 @@
+import pytest
 from fastapi import status
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 
-def test_get_cars(client: TestClient):
-    response = client.get("/cars")
+@pytest.mark.asyncio
+async def test_get_cars(async_client: AsyncClient):
+    response = await async_client.get("/cars")
     assert response.status_code == status.HTTP_200_OK
     response_json = response.json()
     assert response_json["cars"] == [

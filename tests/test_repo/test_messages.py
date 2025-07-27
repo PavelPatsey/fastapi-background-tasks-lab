@@ -1,6 +1,6 @@
 import pytest
 from pydantic import ValidationError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models, schemas
 from app.repo import create_message, create_task
@@ -33,14 +33,16 @@ def test_create_message_model_invalid_task_id():
     )
 
 
-def test_create_message(session: Session):
+@pytest.mark.asyncio
+async def test_create_message(async_session: AsyncSession):
     name = "test task name"
     car_id = "test car id"
-    task = create_task(name=name, car_id=car_id, session=session)
+    task = await create_task(name=name, car_id=car_id, session=async_session)
 
     body = "test message for create"
-    task_id = task.id
-    message = create_message(body=body, task_id=task_id, session=session)
+    message = await create_message(body=body, task_id=task.id, session=async_session)
+
+    await async_session.refresh(task)
 
     assert isinstance(message, models.Message)
     assert hasattr(message, "id")
@@ -49,6 +51,6 @@ def test_create_message(session: Session):
     assert hasattr(message, "task")
     assert message.id == 1
     assert message.body == body
-    assert message.task_id == task_id
+    assert message.task_id == task.id
     assert message.task == task
     assert task.messages == [message]

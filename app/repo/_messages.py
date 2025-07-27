@@ -1,15 +1,15 @@
-import sqlalchemy
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models, schemas
 
 
-def create_message(
-    body: str, task_id: int, session: sqlalchemy.orm.Session
+async def create_message(
+    body: str, task_id: int, session: AsyncSession
 ) -> models.Message:
     msg_in = schemas.MessageCreate(body=body, task_id=task_id)
     data = msg_in.model_dump()
-    body = models.Message(**data)
-    session.add(body)
-    session.commit()
-    session.refresh(body)
-    return body
+    message = models.Message(**data)
+    session.add(message)
+    await session.commit()
+    await session.refresh(message)
+    return message

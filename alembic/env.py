@@ -26,7 +26,7 @@ target_metadata = models.Base.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
-config.set_main_option("sqlalchemy.url", settings.DB_URL)
+config.set_main_option("sqlalchemy.url", f"sqlite:///{settings.DB_FILE_NAME}")
 
 
 def run_migrations_offline() -> None:

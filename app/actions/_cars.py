@@ -1,8 +1,8 @@
 import logging
 from functools import partial
 
-import sqlalchemy
 from fastapi import BackgroundTasks
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models
 from app.garage import GarageClient
@@ -19,28 +19,28 @@ class ActionsCarsError(Exception):
 logger = logging.getLogger("uvicorn.error")
 
 
-def check_car(
+async def check_car(
     car_id: str,
     garage_client: GarageClient,
     background_tasks: BackgroundTasks,
-    session: sqlalchemy.orm.Session,
+    session: AsyncSession,
 ) -> models.Task:
     name = f"check {repr(car_id)}"
-    task = create_task(name, car_id, session)
+    task = await create_task(name, car_id, session)
     steps = [partial(_check, car_id, garage_client)]
     background_tasks.add_task(_run_steps, name, steps, task.id, session)
     return task
 
 
-def send_for_repair(
+async def send_for_repair(
     car_id: str,
     problem: str,
     garage_client: GarageClient,
     background_tasks: BackgroundTasks,
-    session: sqlalchemy.orm.Session,
+    session: AsyncSession,
 ) -> models.Task:
     name = f"send car {repr(car_id)} for repair with problem {repr(problem)}"
-    task = create_task(name, car_id, session)
+    task = await create_task(name, car_id, session)
     steps = [
         partial(_check, car_id, garage_client),
         partial(_get_problems, car_id, garage_client),
@@ -52,14 +52,14 @@ def send_for_repair(
     return task
 
 
-def send_to_parking(
+async def send_to_parking(
     car_id: str,
     garage_client: GarageClient,
     background_tasks: BackgroundTasks,
-    session: sqlalchemy.orm.Session,
+    session: AsyncSession,
 ) -> models.Task:
     name = f"send car {repr(car_id)} to parking"
-    task = create_task(name, car_id, session)
+    task = await create_task(name, car_id, session)
     steps = [
         partial(_check, car_id, garage_client),
         partial(_get_problems, car_id, garage_client),

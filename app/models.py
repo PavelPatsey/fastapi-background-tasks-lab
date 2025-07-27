@@ -22,7 +22,7 @@ class Task(Base):
         nullable=False, insert_default=func.now(), server_onupdate=func.now()
     )
     messages: Mapped[list["Message"]] = relationship(
-        back_populates="task", order_by="Message.id"
+        back_populates="task", order_by="Message.id", lazy="selectin"
     )
 
 

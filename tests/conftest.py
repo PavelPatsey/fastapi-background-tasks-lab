@@ -1,7 +1,8 @@
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from typing import Any, AsyncGenerator
+
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.dependencies import get_garage_client, get_session
 from app.garage import GarageClient
@@ -14,27 +15,32 @@ class FakeGarageClient(GarageClient):
     SLEEP_DURATION = 0
 
 
-@pytest.fixture(name="session")
-def session_fixture():
-    engine = create_engine("sqlite:///tests/fake_database.db")
-    Base.metadata.create_all(bind=engine)
-    session_maker = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    with session_maker() as session:
+@pytest_asyncio.fixture(name="async_session")
+async def session_fixture() -> AsyncGenerator[AsyncSession, Any]:
+    engine = create_async_engine("sqlite+aiosqlite:///tests/fake_database.db")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    async_session = async_sessionmaker(engine, expire_on_commit=False)
+    async with async_session() as session:
         yield session
-    Base.metadata.drop_all(bind=engine)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await engine.dispose()
 
 
-@pytest.fixture(name="client")
-def client_fixture(session: Session):
+@pytest_asyncio.fixture(name="async_client")
+async def client_fixture(async_session: AsyncSession):
     def get_session_override():
-        return session
+        return async_session
 
     def get_garage_client_override():
         return FakeGarageClient()
 
     app.dependency_overrides[get_session] = get_session_override
     app.dependency_overrides[get_garage_client] = get_garage_client_override
-
-    client = TestClient(app)
-    yield client
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        yield client
     app.dependency_overrides.clear()
