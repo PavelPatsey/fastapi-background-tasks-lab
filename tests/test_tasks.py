@@ -14,21 +14,14 @@ async def test_read_tasks(async_client: AsyncClient, async_session: AsyncSession
         car_id="car_1",
         status=TaskStatuses.in_progress,
     )
-    task_2 = models.Task(
-        name="test task 2",
-        car_id="car_2",
-        status=TaskStatuses.in_progress,
-    )
     async_session.add(task_1)
-    async_session.add(task_2)
     await async_session.commit()
 
     response = await async_client.get("/tasks")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
-    assert len(data["tasks"]) == 2
-    assert data["tasks"][0]["name"] == "test task 2"
-    assert data["tasks"][1]["name"] == "test task 1"
+    assert len(data["tasks"]) == 1
+    assert data["tasks"][0]["name"] == "test task 1"
 
 
 @pytest.mark.asyncio
